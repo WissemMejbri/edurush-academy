@@ -27,25 +27,25 @@
     "label": "About Us",
     "title": "Empowering Students to",
     "titleHighlight": "Thrive Globally",
-    "description": "Based in Tunis and operating fully online, EduRush Academy is dedicated to developing confident thinkers, innovators, and future leaders. We provide world-class academic support for students pursuing internationally recognized curricula.",
+    "description": "EduRush Academy is an international online academic support academy dedicated to helping students succeed in globally recognized curricula, including Cambridge IGCSE, AS & A Levels, and the International Baccalaureate (IB). We provide structured tutoring, exam preparation, and personalized guidance designed to strengthen understanding, build confidence, and improve academic performance. In addition, our professional development programs help students develop essential soft and digital skills needed to thrive in today's competitive world.",
     "mission": "Our Mission",
     "missionDesc": "To make high-quality academic support accessible to every student, regardless of location, empowering them to excel in globally recognized curricula.",
     "vision": "Our Vision",
     "visionDesc": "To be the leading online academy for international education, nurturing the next generation of global thinkers and leaders.",
     "global": "Global Reach",
-    "globalDesc": "From Tunis to the world — our fully online platform connects expert tutors with students across continents, ensuring personalized guidance wherever they are."
+    "globalDesc": "Based in Tunis and operating online, EduRush Academy supports learners locally and internationally as they grow into confident thinkers, innovators, and future leaders."
   },
   "programs": {
     "label": "Academic Programs",
     "title": "Curricula We",
     "titleHighlight": "Support",
     "subtitle": "Tailored academic programs designed to help students master their curriculum and achieve outstanding results.",
-    "igcse": "Cambridge IGCSE",
-    "igcseDesc": "Comprehensive tutoring across all IGCSE subjects with a focus on exam technique, concept mastery, and coursework support.",
-    "alevels": "AS & A Levels",
-    "alevelsDesc": "Advanced-level preparation designed to help students achieve top grades and secure offers from leading universities worldwide.",
-    "ib": "International Baccalaureate",
-    "ibDesc": "Full support for the IB Diploma Programme including core components — TOK, Extended Essay, and CAS guidance.",
+    "igcse": "IGCSE Cambridge International Education",
+    "igcseDesc": "At EduRush Academy, we provide comprehensive IGCSE Cambridge International Education programs designed to equip students with the skills and knowledge needed for future academic success. Our experienced instructors guide learners through a well-structured curriculum that emphasizes critical thinking, creativity, and problem-solving. We focus on a supportive learning environment where students can thrive and build confidence in their abilities.",
+    "alevels": "International AS & A-Level",
+    "alevelsDesc": "EduRush Academy provides specialized online academic support for students preparing for Cambridge International AS & A Level examinations. Our expert tutors help learners deepen subject understanding, strengthen analytical thinking, and develop the independent study skills required for advanced academic success. Through structured lessons, exam-focused preparation, and personalized guidance, we support students alongside their school education to help them achieve top results.",
+    "ib": "International Baccalaureate (IB)",
+    "ibDesc": "EduRush Academy provides specialized online academic support for students following the International Baccalaureate (IB) programme. Our experienced tutors assist learners in strengthening subject understanding, developing critical thinking skills, and preparing effectively for internal assessments and final examinations. Through structured guidance, exam-focused strategies, and personalized tutoring, we complement school learning and help students build confidence."
     "learnMore": "Learn more",
     "features": {
       "subjectTutoring": "Subject-specific tutoring",
