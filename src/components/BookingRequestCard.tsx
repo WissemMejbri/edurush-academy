@@ -101,6 +101,10 @@ export function BookingRequestCard({ session, onStatusChange, variant = "teacher
 
       if (error) throw error;
 
+      supabase.functions.invoke("booking-notifications", {
+        body: { session_id: session.id, event_type: "cancelled" },
+      }).catch(console.error);
+
       toast({ title: t("booking.cancelled") });
       onStatusChange();
     } catch (err: any) {

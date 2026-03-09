@@ -99,7 +99,7 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher }: Bo
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { error } = await supabase.from("booking_sessions").insert({
+      const { error, data } = await supabase.from("booking_sessions").insert({
         student_id: user.id,
         teacher_id: formData.teacher_id,
         subject: formData.subject,
@@ -107,9 +107,16 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher }: Bo
         requested_date: formData.date,
         requested_time: formData.time,
         notes: formData.notes || null,
-      });
+      }).select().single();
 
       if (error) throw error;
+
+      // Send email notifications
+      if (data) {
+        supabase.functions.invoke("booking-notifications", {
+          body: { session_id: data.id, event_type: "booked" },
+        }).catch(console.error);
+      }
 
       toast({
         title: t("booking.success"),
