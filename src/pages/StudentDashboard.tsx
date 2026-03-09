@@ -125,13 +125,13 @@ const StudentDashboard = () => {
           </div>
           <p className="text-muted-foreground mb-8">{t("auth.student")} Dashboard</p>
 
-          {/* Quick stats */}
+          {/* Quick stats - all dynamic */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
             {[
-              { label: t("dashboard.myCourses"), value: "3", icon: BookOpen },
               { label: t("dashboard.upcomingSessions"), value: String(upcomingSessions.length), icon: Calendar },
               { label: t("booking.status.pending"), value: String(pendingSessions.length), icon: FileText },
-              { label: t("dashboard.messages"), value: "1", icon: MessageSquare },
+              { label: "Total Sessions", value: String(sessions.length), icon: BookOpen },
+              { label: "Completed", value: String(sessions.filter(s => s.status === "completed").length), icon: BarChart3 },
             ].map(({ label, value, icon: Icon }) => (
               <div key={label} className="bg-card rounded-2xl border border-border p-5 premium-shadow-sm">
                 <div className="flex items-center justify-between mb-3">

@@ -49,7 +49,7 @@ const AuthPage = () => {
 
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -58,7 +58,12 @@ const AuthPage = () => {
           },
         });
         if (error) throw error;
-        toast({ title: t("auth.signupSuccess") });
+        
+        // Auto-confirmed: redirect immediately to dashboard
+        if (data.user) {
+          toast({ title: t("auth.signupSuccess") });
+          navigate(`/dashboard/${role}`);
+        }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
