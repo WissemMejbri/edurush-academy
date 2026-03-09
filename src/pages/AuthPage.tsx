@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -26,6 +26,23 @@ const AuthPage = () => {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Check if user is already logged in and redirect to their dashboard
+  useEffect(() => {
+    const checkAuthAndRedirect = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // Fetch user role from database
+        const { data: roleData } = await supabase
+          .rpc("get_user_role", { _user_id: session.user.id });
+        
+        const userRole = roleData || session.user.user_metadata?.role || "student";
+        navigate(`/dashboard/${userRole}`);
+      }
+    };
+    
+    checkAuthAndRedirect();
+  }, [navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -43,10 +60,19 @@ const AuthPage = () => {
         if (error) throw error;
         toast({ title: t("auth.signupSuccess") });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        toast({ title: t("auth.loginSuccess") });
-        navigate(`/dashboard/${role}`);
+        
+        // Fetch the user's actual role from database
+        if (data.user) {
+          const { data: roleData } = await supabase
+            .rpc("get_user_role", { _user_id: data.user.id });
+          
+          const userRole = roleData || data.user.user_metadata?.role || "student";
+          
+          toast({ title: t("auth.loginSuccess") });
+          navigate(`/dashboard/${userRole}`);
+        }
       }
     } catch (err: any) {
       toast({ title: err.message || "An error occurred", variant: "destructive" });
@@ -77,30 +103,32 @@ const AuthPage = () => {
             </h1>
           </div>
 
-          {/* Role selector */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-foreground mb-3">{t("auth.loginAs")}</label>
-            <div className="grid grid-cols-3 gap-2">
-              {(["student", "teacher", "admin"] as Role[]).map((r) => {
-                const { icon: Icon, color } = roleConfig[r];
-                return (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setRole(r)}
-                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
-                      role === r ? "border-accent bg-accent/5" : "border-border hover:border-accent/30"
-                    }`}
-                  >
-                    <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center`}>
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <span className="text-xs font-semibold text-foreground">{t(`auth.${r}`)}</span>
-                  </button>
-                );
-              })}
+          {/* Role selector - only show for signup */}
+          {mode === "signup" && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-foreground mb-3">{t("auth.loginAs")}</label>
+              <div className="grid grid-cols-3 gap-2">
+                {(["student", "teacher"] as Role[]).map((r) => {
+                  const { icon: Icon, color } = roleConfig[r];
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setRole(r)}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
+                        role === r ? "border-accent bg-accent/5" : "border-border hover:border-accent/30"
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center`}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <span className="text-xs font-semibold text-foreground">{t(`auth.${r}`)}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === "signup" && (
