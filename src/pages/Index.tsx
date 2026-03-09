@@ -10,6 +10,8 @@ import HowItWorksSection from "@/components/HowItWorksSection";
 import ContactSection from "@/components/ContactSection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
+import CookieConsent from "@/components/CookieConsent";
+import AIChatbot from "@/components/AIChatbot";
 
 const Index = () => {
   return (
@@ -26,6 +28,8 @@ const Index = () => {
       <ContactSection />
       <CTASection />
       <Footer />
+      <CookieConsent />
+      <AIChatbot />
     </div>
   );
 };
