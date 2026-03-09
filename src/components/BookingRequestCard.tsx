@@ -53,6 +53,11 @@ export function BookingRequestCard({ session, onStatusChange, variant = "teacher
 
       if (error) throw error;
 
+      // Send email notification
+      supabase.functions.invoke("booking-notifications", {
+        body: { session_id: session.id, event_type: "accepted", zoom_link: zoomLink || undefined },
+      }).catch(console.error);
+
       toast({ title: t("booking.accepted"), description: t("booking.acceptedDesc") });
       setShowAcceptDialog(false);
       onStatusChange();
@@ -73,6 +78,10 @@ export function BookingRequestCard({ session, onStatusChange, variant = "teacher
 
       if (error) throw error;
 
+      supabase.functions.invoke("booking-notifications", {
+        body: { session_id: session.id, event_type: "declined" },
+      }).catch(console.error);
+
       toast({ title: t("booking.declined"), description: t("booking.declinedDesc") });
       onStatusChange();
     } catch (err: any) {
@@ -91,6 +100,10 @@ export function BookingRequestCard({ session, onStatusChange, variant = "teacher
         .eq("id", session.id);
 
       if (error) throw error;
+
+      supabase.functions.invoke("booking-notifications", {
+        body: { session_id: session.id, event_type: "cancelled" },
+      }).catch(console.error);
 
       toast({ title: t("booking.cancelled") });
       onStatusChange();
