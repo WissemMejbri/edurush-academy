@@ -1,8 +1,7 @@
 import { motion } from "framer-motion";
-import { GraduationCap, Award, ArrowRight, Users, Globe } from "lucide-react";
+import { GraduationCap, Award, ArrowRight, Users } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import heroBg from "@/assets/hero-bg.jpg";
 
 const AnimatedCounter = ({ target, suffix = "" }: { target: number; suffix?: string }) => {
   const [count, setCount] = useState(0);
@@ -41,8 +40,17 @@ const HeroSection = () => {
   return (
     <section id="home" className="relative min-h-screen flex items-center overflow-hidden">
       <div className="absolute inset-0">
-        <img src={heroBg} alt="Students learning together" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/85 to-navy-dark/95" />
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="w-full h-full object-cover"
+          poster=""
+        >
+          <source src="/hero-bg.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(222,47%,18%)]/90 via-[hsl(222,47%,18%)]/85 to-[hsl(222,55%,12%)]/95" />
       </div>
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 right-1/4 w-72 h-72 rounded-full bg-accent/10 blur-3xl animate-pulse-glow" />
@@ -56,12 +64,12 @@ const HeroSection = () => {
                 <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
                 {t("hero.badge")}
               </span>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-display font-bold text-primary-foreground leading-[1.1] mb-8">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-display font-bold text-white leading-[1.1] mb-8">
                 {t("hero.title1")}{" "}
                 <span className="text-accent">{t("hero.titleHighlight")}</span>{" "}
                 {t("hero.title2")}
               </h1>
-              <p className="text-lg md:text-xl text-primary-foreground/75 mb-10 max-w-xl leading-relaxed">
+              <p className="text-lg md:text-xl text-white/75 mb-10 max-w-xl leading-relaxed">
                 {t("hero.subtitle")}
               </p>
             </motion.div>
@@ -70,7 +78,7 @@ const HeroSection = () => {
                 {t("hero.cta1")}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform" />
               </a>
-              <a href="#programs" className="glass text-primary-foreground px-8 py-4 rounded-xl text-base font-semibold hover:bg-primary-foreground/10 transition-all text-center">
+              <a href="#programs" className="glass text-white px-8 py-4 rounded-xl text-base font-semibold hover:bg-white/10 transition-all text-center">
                 {t("hero.cta2")}
               </a>
             </motion.div>
@@ -83,10 +91,10 @@ const HeroSection = () => {
             ].map(({ icon: Icon, value, suffix, label, color }, i) => (
               <motion.div key={label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.6 + i * 0.1 }} className="glass-card rounded-2xl p-6 hover:scale-[1.02] transition-transform">
                 <Icon className={`w-8 h-8 ${color} mb-3`} />
-                <div className="text-3xl font-bold text-primary-foreground mb-1">
+                <div className="text-3xl font-bold text-white mb-1">
                   <AnimatedCounter target={value} suffix={suffix} />
                 </div>
-                <p className="text-sm text-primary-foreground/60">{label}</p>
+                <p className="text-sm text-white/60">{label}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -99,7 +107,7 @@ const HeroSection = () => {
           ].map(({ icon: Icon, label }) => (
             <div key={label} className="glass-card rounded-xl p-4 flex items-center gap-3">
               <Icon className="w-5 h-5 text-accent flex-shrink-0" />
-              <span className="text-xs font-semibold text-primary-foreground">{label}</span>
+              <span className="text-xs font-semibold text-white">{label}</span>
             </div>
           ))}
         </motion.div>
