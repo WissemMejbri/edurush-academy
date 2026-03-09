@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import LanguageSwitcher from "./LanguageSwitcher";
+import ThemeToggle from "./ThemeToggle";
 
 const Navbar = () => {
   const { t } = useTranslation();
@@ -42,6 +43,7 @@ const Navbar = () => {
             </a>
           ))}
           <LanguageSwitcher />
+          <ThemeToggle />
           <Link to="/auth" className="border border-border text-foreground px-4 py-2 rounded-xl text-sm font-semibold hover:bg-muted transition-colors">
             {t("nav.login")}
           </Link>
@@ -64,7 +66,7 @@ const Navbar = () => {
                   {item.label}
                 </a>
               ))}
-              <div className="py-2"><LanguageSwitcher /></div>
+              <div className="py-2 flex items-center gap-3"><LanguageSwitcher /><ThemeToggle /></div>
               <Link to="/auth" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-foreground/80 hover:text-accent py-2 transition-colors">
                 {t("nav.login")}
               </Link>
