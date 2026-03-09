@@ -77,9 +77,8 @@ const HeroSection = () => {
           </div>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.4 }} className="hidden lg:grid grid-cols-2 gap-5">
             {[
-              { icon: Users, value: 500, suffix: "+", label: t("hero.students"), color: "text-accent" },
+              { icon: Users, value: 260, suffix: "+", label: t("hero.students"), color: "text-accent" },
               { icon: GraduationCap, value: 25, suffix: "+", label: t("hero.tutors"), color: "text-gold-light" },
-              { icon: Globe, value: 15, suffix: "+", label: t("hero.countries"), color: "text-accent" },
               { icon: Award, value: 98, suffix: "%", label: t("hero.satisfaction"), color: "text-gold-light" },
             ].map(({ icon: Icon, value, suffix, label, color }, i) => (
               <motion.div key={label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.6 + i * 0.1 }} className="glass-card rounded-2xl p-6 hover:scale-[1.02] transition-transform">
@@ -92,11 +91,10 @@ const HeroSection = () => {
             ))}
           </motion.div>
         </div>
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7, delay: 0.6 }} className="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-4 lg:hidden">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7, delay: 0.6 }} className="mt-16 grid grid-cols-3 gap-4 lg:hidden">
           {[
-            { icon: Users, label: "500+ " + t("hero.students").split(" ")[0] },
+            { icon: Users, label: "260+ " + t("hero.students").split(" ")[0] },
             { icon: GraduationCap, label: "25+ " + t("hero.tutors").split(" ")[0] },
-            { icon: Globe, label: "15+ " + t("hero.countries").split(" ")[0] },
             { icon: Award, label: "98% " + t("hero.satisfaction").split(" ")[0] },
           ].map(({ icon: Icon, label }) => (
             <div key={label} className="glass-card rounded-xl p-4 flex items-center gap-3">
