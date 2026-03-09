@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import LanguageSwitcher from "./LanguageSwitcher";
 import ThemeToggle from "./ThemeToggle";
+import logoImg from "@/assets/edurush-logo.jpeg";
 
 const Navbar = () => {
   const { t } = useTranslation();
