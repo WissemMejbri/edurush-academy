@@ -43,6 +43,7 @@ const Navbar = () => {
             </a>
           ))}
           <LanguageSwitcher />
+          <ThemeToggle />
           <Link to="/auth" className="border border-border text-foreground px-4 py-2 rounded-xl text-sm font-semibold hover:bg-muted transition-colors">
             {t("nav.login")}
           </Link>
