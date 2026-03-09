@@ -7,6 +7,7 @@ import {
   Users, Calendar, FileText, BookOpen, MessageSquare,
   Settings, LogOut, ClipboardCheck, Home
 } from "lucide-react";
+import { BookingRequestCard } from "@/components/BookingRequestCard";
 
 const menuItems = [
   { key: "myStudents", icon: Users },
@@ -18,10 +19,27 @@ const menuItems = [
   { key: "settings", icon: Settings },
 ];
 
+interface BookingSession {
+  id: string;
+  student_id: string;
+  teacher_id: string;
+  subject: string;
+  level: string;
+  requested_date: string;
+  requested_time: string;
+  duration_minutes: number;
+  status: string;
+  notes: string | null;
+  zoom_link: string | null;
+  student_name?: string;
+}
+
 const TeacherDashboard = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("bookingRequests");
+  const [sessions, setSessions] = useState<BookingSession[]>([]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -35,12 +53,47 @@ const TeacherDashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  const fetchSessions = async () => {
+    if (!user) return;
+    
+    // Fetch sessions with student names
+    const { data } = await supabase
+      .from("booking_sessions")
+      .select("*")
+      .eq("teacher_id", user.id)
+      .order("requested_date", { ascending: true });
+    
+    if (data) {
+      // Fetch student profiles for names
+      const studentIds = [...new Set(data.map(s => s.student_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", studentIds);
+      
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p.full_name]) || []);
+      
+      setSessions(data.map(s => ({
+        ...s,
+        student_name: profileMap.get(s.student_id) || "Unknown Student"
+      })));
+    }
+  };
+
+  useEffect(() => {
+    if (user) fetchSessions();
+  }, [user]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/");
   };
 
   if (!user) return null;
+
+  const pendingSessions = sessions.filter(s => s.status === "pending");
+  const upcomingSessions = sessions.filter(s => s.status === "accepted");
+  const uniqueStudents = new Set(sessions.map(s => s.student_id)).size;
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -52,7 +105,10 @@ const TeacherDashboard = () => {
           {menuItems.map(({ key, icon: Icon }) => (
             <button
               key={key}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              onClick={() => setActiveTab(key)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                activeTab === key ? "bg-accent/10 text-accent" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
             >
               <Icon className="w-4 h-4" />
               {t(`dashboard.${key}`)}
@@ -78,9 +134,9 @@ const TeacherDashboard = () => {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
             {[
-              { label: t("dashboard.myStudents"), value: "12", icon: Users },
-              { label: t("dashboard.upcomingSessions"), value: "4", icon: Calendar },
-              { label: t("dashboard.bookingRequests"), value: "3", icon: ClipboardCheck },
+              { label: t("dashboard.myStudents"), value: String(uniqueStudents), icon: Users },
+              { label: t("dashboard.upcomingSessions"), value: String(upcomingSessions.length), icon: Calendar },
+              { label: t("dashboard.bookingRequests"), value: String(pendingSessions.length), icon: ClipboardCheck },
               { label: t("dashboard.messages"), value: "2", icon: MessageSquare },
             ].map(({ label, value, icon: Icon }) => (
               <div key={label} className="bg-card rounded-2xl border border-border p-5 premium-shadow-sm">
@@ -94,38 +150,45 @@ const TeacherDashboard = () => {
           </div>
 
           <div className="grid lg:grid-cols-2 gap-6">
+            {/* Booking Requests */}
             <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
-              <h3 className="font-display text-lg font-bold text-foreground mb-4">{t("dashboard.bookingRequests")}</h3>
+              <h3 className="font-display text-lg font-bold text-foreground mb-4">
+                {t("dashboard.bookingRequests")}
+              </h3>
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">Amira K. — IB Mathematics</p>
-                    <p className="text-xs text-muted-foreground">March 15 at 18:00</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button className="px-3 py-1.5 text-xs font-semibold bg-accent text-accent-foreground rounded-lg">Accept</button>
-                    <button className="px-3 py-1.5 text-xs font-semibold bg-secondary text-secondary-foreground rounded-lg">Decline</button>
-                  </div>
-                </div>
+                {pendingSessions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No pending requests</p>
+                ) : (
+                  pendingSessions.slice(0, 5).map((session) => (
+                    <BookingRequestCard
+                      key={session.id}
+                      session={session}
+                      onStatusChange={fetchSessions}
+                      variant="teacher"
+                    />
+                  ))
+                )}
               </div>
             </div>
+
+            {/* Upcoming Sessions */}
             <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
-              <h3 className="font-display text-lg font-bold text-foreground mb-4">{t("dashboard.sessionCalendar")}</h3>
+              <h3 className="font-display text-lg font-bold text-foreground mb-4">
+                {t("dashboard.sessionCalendar")}
+              </h3>
               <div className="space-y-3">
-                <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/50">
-                  <Calendar className="w-5 h-5 text-accent" />
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">IGCSE Physics — David L.</p>
-                    <p className="text-xs text-muted-foreground">Today at 15:00</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/50">
-                  <Calendar className="w-5 h-5 text-accent" />
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">A Level Chemistry — Fatima H.</p>
-                    <p className="text-xs text-muted-foreground">Tomorrow at 10:00</p>
-                  </div>
-                </div>
+                {upcomingSessions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{t("dashboard.noSessions")}</p>
+                ) : (
+                  upcomingSessions.slice(0, 5).map((session) => (
+                    <BookingRequestCard
+                      key={session.id}
+                      session={session}
+                      onStatusChange={fetchSessions}
+                      variant="teacher"
+                    />
+                  ))
+                )}
               </div>
             </div>
           </div>

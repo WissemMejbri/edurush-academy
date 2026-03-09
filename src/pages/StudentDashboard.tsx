@@ -5,8 +5,11 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import {
   BookOpen, Calendar, FileText, BarChart3, MessageSquare,
-  Settings, LogOut, GraduationCap, Home
+  Settings, LogOut, GraduationCap, Home, Plus
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { BookSessionDialog } from "@/components/BookSessionDialog";
+import { BookingRequestCard } from "@/components/BookingRequestCard";
 
 const menuItems = [
   { key: "myCourses", icon: BookOpen },
@@ -18,11 +21,27 @@ const menuItems = [
   { key: "settings", icon: Settings },
 ];
 
+interface BookingSession {
+  id: string;
+  student_id: string;
+  teacher_id: string;
+  subject: string;
+  level: string;
+  requested_date: string;
+  requested_time: string;
+  duration_minutes: number;
+  status: string;
+  notes: string | null;
+  zoom_link: string | null;
+}
+
 const StudentDashboard = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("myCourses");
+  const [bookDialogOpen, setBookDialogOpen] = useState(false);
+  const [sessions, setSessions] = useState<BookingSession[]>([]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -36,12 +55,30 @@ const StudentDashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  const fetchSessions = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("booking_sessions")
+      .select("*")
+      .eq("student_id", user.id)
+      .order("requested_date", { ascending: true });
+    
+    if (data) setSessions(data);
+  };
+
+  useEffect(() => {
+    if (user) fetchSessions();
+  }, [user]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/");
   };
 
   if (!user) return null;
+
+  const pendingSessions = sessions.filter(s => s.status === "pending");
+  const upcomingSessions = sessions.filter(s => s.status === "accepted");
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -77,17 +114,23 @@ const StudentDashboard = () => {
       {/* Main */}
       <main className="flex-1 p-6 md:p-10">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-2">
-            {t("dashboard.welcome")}, {user.user_metadata?.full_name || user.email?.split("@")[0]} 👋
-          </h1>
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">
+              {t("dashboard.welcome")}, {user.user_metadata?.full_name || user.email?.split("@")[0]} 👋
+            </h1>
+            <Button onClick={() => setBookDialogOpen(true)} className="gap-2">
+              <Plus className="w-4 h-4" />
+              {t("dashboard.bookSession")}
+            </Button>
+          </div>
           <p className="text-muted-foreground mb-8">{t("auth.student")} Dashboard</p>
 
           {/* Quick stats */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
             {[
               { label: t("dashboard.myCourses"), value: "3", icon: BookOpen },
-              { label: t("dashboard.upcomingSessions"), value: "2", icon: Calendar },
-              { label: t("dashboard.assignments"), value: "5", icon: FileText },
+              { label: t("dashboard.upcomingSessions"), value: String(upcomingSessions.length), icon: Calendar },
+              { label: t("booking.status.pending"), value: String(pendingSessions.length), icon: FileText },
               { label: t("dashboard.messages"), value: "1", icon: MessageSquare },
             ].map(({ label, value, icon: Icon }) => (
               <div key={label} className="bg-card rounded-2xl border border-border p-5 premium-shadow-sm">
@@ -102,49 +145,52 @@ const StudentDashboard = () => {
 
           {/* Content area */}
           <div className="grid lg:grid-cols-2 gap-6">
+            {/* Upcoming Sessions */}
             <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
-              <h3 className="font-display text-lg font-bold text-foreground mb-4">{t("dashboard.upcomingSessions")}</h3>
+              <h3 className="font-display text-lg font-bold text-foreground mb-4">
+                {t("dashboard.upcomingSessions")}
+              </h3>
               <div className="space-y-3">
-                <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/50">
-                  <Calendar className="w-5 h-5 text-accent" />
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">IGCSE Mathematics</p>
-                    <p className="text-xs text-muted-foreground">Tomorrow at 18:00 · Dr. Sarah Mitchell</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/50">
-                  <Calendar className="w-5 h-5 text-accent" />
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">IB Chemistry HL</p>
-                    <p className="text-xs text-muted-foreground">Wed at 16:00 · Prof. Ahmed Benali</p>
-                  </div>
-                </div>
+                {upcomingSessions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{t("dashboard.noSessions")}</p>
+                ) : (
+                  upcomingSessions.slice(0, 3).map((session) => (
+                    <BookingRequestCard
+                      key={session.id}
+                      session={session}
+                      onStatusChange={fetchSessions}
+                      variant="student"
+                    />
+                  ))
+                )}
               </div>
             </div>
+
+            {/* Pending Requests */}
             <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
-              <h3 className="font-display text-lg font-bold text-foreground mb-4">{t("dashboard.assignments")}</h3>
+              <h3 className="font-display text-lg font-bold text-foreground mb-4">
+                {t("booking.status.pending")} {t("dashboard.bookingRequests")}
+              </h3>
               <div className="space-y-3">
-                <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/50">
-                  <FileText className="w-5 h-5 text-accent" />
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-foreground">Physics Lab Report</p>
-                    <p className="text-xs text-muted-foreground">Due: March 12</p>
-                  </div>
-                  <span className="text-xs bg-accent/10 text-accent px-3 py-1 rounded-full font-medium">Pending</span>
-                </div>
-                <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/50">
-                  <FileText className="w-5 h-5 text-accent" />
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-foreground">Math Problem Set 5</p>
-                    <p className="text-xs text-muted-foreground">Due: March 15</p>
-                  </div>
-                  <span className="text-xs bg-accent/10 text-accent px-3 py-1 rounded-full font-medium">Pending</span>
-                </div>
+                {pendingSessions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{t("dashboard.noAssignments")}</p>
+                ) : (
+                  pendingSessions.slice(0, 3).map((session) => (
+                    <BookingRequestCard
+                      key={session.id}
+                      session={session}
+                      onStatusChange={fetchSessions}
+                      variant="student"
+                    />
+                  ))
+                )}
               </div>
             </div>
           </div>
         </motion.div>
       </main>
+
+      <BookSessionDialog open={bookDialogOpen} onOpenChange={setBookDialogOpen} />
     </div>
   );
 };

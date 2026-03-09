@@ -1,0 +1,241 @@
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Calendar, Clock, User, BookOpen, Check, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+
+interface BookingSession {
+  id: string;
+  student_id: string;
+  teacher_id: string;
+  subject: string;
+  level: string;
+  requested_date: string;
+  requested_time: string;
+  duration_minutes: number;
+  status: string;
+  notes: string | null;
+  zoom_link: string | null;
+  student_name?: string;
+}
+
+interface BookingRequestCardProps {
+  session: BookingSession;
+  onStatusChange: () => void;
+  variant?: "teacher" | "student";
+}
+
+export function BookingRequestCard({ session, onStatusChange, variant = "teacher" }: BookingRequestCardProps) {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [showAcceptDialog, setShowAcceptDialog] = useState(false);
+  const [zoomLink, setZoomLink] = useState("");
+
+  const handleAccept = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("booking_sessions")
+        .update({ status: "accepted", zoom_link: zoomLink || null })
+        .eq("id", session.id);
+
+      if (error) throw error;
+
+      toast({ title: t("booking.accepted"), description: t("booking.acceptedDesc") });
+      setShowAcceptDialog(false);
+      onStatusChange();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDecline = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("booking_sessions")
+        .update({ status: "declined" })
+        .eq("id", session.id);
+
+      if (error) throw error;
+
+      toast({ title: t("booking.declined"), description: t("booking.declinedDesc") });
+      onStatusChange();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("booking_sessions")
+        .update({ status: "cancelled" })
+        .eq("id", session.id);
+
+      if (error) throw error;
+
+      toast({ title: t("booking.cancelled") });
+      onStatusChange();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  const statusColors: Record<string, string> = {
+    pending: "bg-amber-500/10 text-amber-600",
+    accepted: "bg-emerald-500/10 text-emerald-600",
+    declined: "bg-destructive/10 text-destructive",
+    cancelled: "bg-muted text-muted-foreground",
+    completed: "bg-primary/10 text-primary",
+  };
+
+  return (
+    <>
+      <div className="bg-card rounded-xl border border-border p-4 premium-shadow-sm">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-accent" />
+              <span className="font-semibold text-foreground">
+                {session.subject} — {session.level}
+              </span>
+            </div>
+            
+            {variant === "teacher" && session.student_name && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <User className="w-4 h-4" />
+                <span>{session.student_name}</span>
+              </div>
+            )}
+
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                {formatDate(session.requested_date)}
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="w-4 h-4" />
+                {session.requested_time}
+              </span>
+            </div>
+
+            {session.notes && (
+              <p className="text-sm text-muted-foreground italic">"{session.notes}"</p>
+            )}
+
+            {session.status === "accepted" && session.zoom_link && (
+              <a
+                href={session.zoom_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-accent hover:underline"
+              >
+                🔗 Join Session
+              </a>
+            )}
+          </div>
+
+          <div className="flex flex-col items-end gap-2">
+            <span className={`text-xs font-medium px-3 py-1 rounded-full ${statusColors[session.status]}`}>
+              {t(`booking.status.${session.status}`)}
+            </span>
+
+            {variant === "teacher" && session.status === "pending" && (
+              <div className="flex gap-2 mt-2">
+                <Button
+                  size="sm"
+                  onClick={() => setShowAcceptDialog(true)}
+                  disabled={loading}
+                  className="gap-1"
+                >
+                  <Check className="w-4 h-4" />
+                  {t("booking.accept")}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleDecline}
+                  disabled={loading}
+                  className="gap-1"
+                >
+                  <X className="w-4 h-4" />
+                  {t("booking.decline")}
+                </Button>
+              </div>
+            )}
+
+            {variant === "student" && session.status === "pending" && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleCancel}
+                disabled={loading}
+              >
+                {t("booking.cancel")}
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Accept Dialog with Zoom Link */}
+      <Dialog open={showAcceptDialog} onOpenChange={setShowAcceptDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("booking.confirmAccept")}</DialogTitle>
+            <DialogDescription>{t("booking.confirmAcceptDesc")}</DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{t("booking.zoomLink")}</Label>
+              <Input
+                placeholder="https://zoom.us/j/..."
+                value={zoomLink}
+                onChange={(e) => setZoomLink(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">{t("booking.zoomLinkHint")}</p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAcceptDialog(false)}>
+              {t("booking.back")}
+            </Button>
+            <Button onClick={handleAccept} disabled={loading}>
+              {loading ? "..." : t("booking.confirmAndAccept")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
