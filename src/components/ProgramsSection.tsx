@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { BookOpen, FlaskConical, Star, ArrowRight, CheckCircle2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
