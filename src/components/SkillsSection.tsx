@@ -20,7 +20,7 @@ const fadeUp = {
 
 const SkillsSection = () => {
   return (
-    <section id="skills" className="section-padding bg-background">
+    <section id="skills" className="section-padding bg-secondary/30">
       <div className="container mx-auto">
         <motion.div
           initial="hidden"
@@ -31,7 +31,7 @@ const SkillsSection = () => {
           <motion.span variants={fadeUp} custom={0} className="text-accent font-semibold text-sm uppercase tracking-widest">
             Beyond Academics
           </motion.span>
-          <motion.h2 variants={fadeUp} custom={1} className="font-display text-3xl md:text-4xl font-bold text-foreground mt-3 mb-4">
+          <motion.h2 variants={fadeUp} custom={1} className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mt-3 mb-4">
             Skills & <span className="text-accent">Professional Development</span>
           </motion.h2>
           <motion.p variants={fadeUp} custom={2} className="text-muted-foreground text-lg max-w-2xl mx-auto">
@@ -48,10 +48,10 @@ const SkillsSection = () => {
               viewport={{ once: true, margin: "-50px" }}
               variants={fadeUp}
               custom={i}
-              className="group p-6 rounded-xl border border-border bg-card hover:bg-accent/5 transition-colors"
+              className="group p-7 rounded-2xl border border-border bg-card hover:border-accent/20 premium-shadow-sm hover:premium-shadow transition-all duration-300"
             >
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-                <Icon className="w-5 h-5 text-primary group-hover:text-accent transition-colors" />
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-accent/15 group-hover:scale-110 transition-all duration-300">
+                <Icon className="w-6 h-6 text-primary group-hover:text-accent transition-colors" />
               </div>
               <h3 className="font-display text-lg font-bold text-foreground mb-2">{title}</h3>
               <p className="text-muted-foreground text-sm leading-relaxed">{desc}</p>

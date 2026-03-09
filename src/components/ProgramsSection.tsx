@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { BookOpen, FlaskConical, Star } from "lucide-react";
+import { BookOpen, FlaskConical, Star, ArrowRight, CheckCircle2 } from "lucide-react";
 
 const programs = [
   {
@@ -7,18 +7,21 @@ const programs = [
     title: "Cambridge IGCSE",
     description: "Comprehensive tutoring across all IGCSE subjects with a focus on exam technique, concept mastery, and coursework support.",
     features: ["Subject-specific tutoring", "Past paper practice", "Exam preparation workshops", "Coursework guidance"],
+    color: "from-primary to-navy-light",
   },
   {
     icon: FlaskConical,
     title: "AS & A Levels",
     description: "Advanced-level preparation designed to help students achieve top grades and secure offers from leading universities worldwide.",
     features: ["In-depth subject coaching", "University application support", "Predicted grade strategy", "Mock exam preparation"],
+    color: "from-accent/90 to-accent",
   },
   {
     icon: Star,
-    title: "International Baccalaureate (IB)",
+    title: "International Baccalaureate",
     description: "Full support for the IB Diploma Programme including core components — TOK, Extended Essay, and CAS guidance.",
     features: ["HL & SL subject support", "TOK & Extended Essay mentoring", "Internal assessment coaching", "CAS portfolio guidance"],
+    color: "from-navy-dark to-primary",
   },
 ];
 
@@ -32,7 +35,7 @@ const fadeUp = {
 
 const ProgramsSection = () => {
   return (
-    <section id="programs" className="section-padding bg-secondary/50">
+    <section id="programs" className="section-padding bg-secondary/30">
       <div className="container mx-auto">
         <motion.div
           initial="hidden"
@@ -43,7 +46,7 @@ const ProgramsSection = () => {
           <motion.span variants={fadeUp} custom={0} className="text-accent font-semibold text-sm uppercase tracking-widest">
             Academic Programs
           </motion.span>
-          <motion.h2 variants={fadeUp} custom={1} className="font-display text-3xl md:text-4xl font-bold text-foreground mt-3 mb-4">
+          <motion.h2 variants={fadeUp} custom={1} className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mt-3 mb-4">
             Curricula We <span className="text-accent">Support</span>
           </motion.h2>
           <motion.p variants={fadeUp} custom={2} className="text-muted-foreground text-lg max-w-2xl mx-auto">
@@ -52,7 +55,7 @@ const ProgramsSection = () => {
         </motion.div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {programs.map(({ icon: Icon, title, description, features }, i) => (
+          {programs.map(({ icon: Icon, title, description, features, color }, i) => (
             <motion.div
               key={title}
               initial="hidden"
@@ -60,27 +63,28 @@ const ProgramsSection = () => {
               viewport={{ once: true, margin: "-50px" }}
               variants={fadeUp}
               custom={i}
-              className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-shadow group"
+              className="bg-card rounded-2xl border border-border overflow-hidden premium-shadow-sm hover:premium-shadow transition-all duration-300 group flex flex-col"
             >
-              <div className="bg-primary p-6">
-                <Icon className="w-8 h-8 text-accent mb-3" />
+              <div className={`bg-gradient-to-r ${color} p-7`}>
+                <Icon className="w-9 h-9 text-primary-foreground/90 mb-3" />
                 <h3 className="font-display text-2xl font-bold text-primary-foreground">{title}</h3>
               </div>
-              <div className="p-6">
+              <div className="p-7 flex-1 flex flex-col">
                 <p className="text-muted-foreground mb-6 leading-relaxed">{description}</p>
-                <ul className="space-y-3">
+                <ul className="space-y-3 mb-6 flex-1">
                   {features.map((f) => (
                     <li key={f} className="flex items-start gap-3 text-sm text-foreground">
-                      <span className="w-1.5 h-1.5 rounded-full bg-accent mt-2 flex-shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
                       {f}
                     </li>
                   ))}
                 </ul>
                 <a
                   href="#contact"
-                  className="mt-6 inline-block text-accent font-semibold text-sm hover:underline"
+                  className="inline-flex items-center gap-2 text-accent font-semibold text-sm hover:gap-3 transition-all group/link"
                 >
-                  Learn more →
+                  Learn more
+                  <ArrowRight className="w-4 h-4" />
                 </a>
               </div>
             </motion.div>

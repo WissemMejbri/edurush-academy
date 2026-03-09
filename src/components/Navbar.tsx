@@ -6,7 +6,7 @@ const navItems = [
   { label: "Home", href: "#home" },
   { label: "About", href: "#about" },
   { label: "Programs", href: "#programs" },
-  { label: "Skills", href: "#skills" },
+  { label: "Tutors", href: "#tutors" },
   { label: "How It Works", href: "#how-it-works" },
   { label: "Contact", href: "#contact" },
 ];
@@ -32,7 +32,7 @@ const Navbar = () => {
           <span className="font-display text-xl md:text-2xl font-bold text-primary">
             Edu<span className="text-accent">Rush</span>
           </span>
-          <span className={`hidden sm:inline text-xs font-medium tracking-widest uppercase ${scrolled ? "text-muted-foreground" : "text-primary-foreground/70"} transition-colors`} style={!scrolled ? { color: "hsl(var(--muted-foreground))" } : {}}>
+          <span className="hidden sm:inline text-xs font-medium tracking-widest uppercase text-muted-foreground transition-colors">
             Academy
           </span>
         </a>
@@ -43,14 +43,14 @@ const Navbar = () => {
             <a
               key={item.href}
               href={item.href}
-              className="text-sm font-medium text-foreground/80 hover:text-accent transition-colors"
+              className="text-sm font-medium text-foreground/70 hover:text-accent transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-accent after:transition-all hover:after:w-full"
             >
               {item.label}
             </a>
           ))}
           <a
             href="#contact"
-            className="bg-accent text-accent-foreground px-5 py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity"
+            className="bg-accent text-accent-foreground px-6 py-2.5 rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-accent/20 transition-all"
           >
             Book a Consultation
           </a>
@@ -89,7 +89,7 @@ const Navbar = () => {
               <a
                 href="#contact"
                 onClick={() => setMobileOpen(false)}
-                className="bg-accent text-accent-foreground px-5 py-2.5 rounded-lg text-sm font-semibold text-center hover:opacity-90 transition-opacity mt-2"
+                className="bg-accent text-accent-foreground px-5 py-2.5 rounded-xl text-sm font-semibold text-center hover:opacity-90 transition-opacity mt-2"
               >
                 Book a Consultation
               </a>
