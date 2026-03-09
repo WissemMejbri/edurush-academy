@@ -91,11 +91,10 @@ const HeroSection = () => {
             ))}
           </motion.div>
         </div>
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7, delay: 0.6 }} className="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-4 lg:hidden">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7, delay: 0.6 }} className="mt-16 grid grid-cols-3 gap-4 lg:hidden">
           {[
-            { icon: Users, label: "500+ " + t("hero.students").split(" ")[0] },
+            { icon: Users, label: "260+ " + t("hero.students").split(" ")[0] },
             { icon: GraduationCap, label: "25+ " + t("hero.tutors").split(" ")[0] },
-            { icon: Globe, label: "15+ " + t("hero.countries").split(" ")[0] },
             { icon: Award, label: "98% " + t("hero.satisfaction").split(" ")[0] },
           ].map(({ icon: Icon, label }) => (
             <div key={label} className="glass-card rounded-xl p-4 flex items-center gap-3">
