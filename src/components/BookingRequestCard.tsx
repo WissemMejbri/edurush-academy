@@ -53,6 +53,11 @@ export function BookingRequestCard({ session, onStatusChange, variant = "teacher
 
       if (error) throw error;
 
+      // Send email notification
+      supabase.functions.invoke("booking-notifications", {
+        body: { session_id: session.id, event_type: "accepted", zoom_link: zoomLink || undefined },
+      }).catch(console.error);
+
       toast({ title: t("booking.accepted"), description: t("booking.acceptedDesc") });
       setShowAcceptDialog(false);
       onStatusChange();
