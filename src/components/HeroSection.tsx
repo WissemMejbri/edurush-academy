@@ -1,76 +1,149 @@
 import { motion } from "framer-motion";
-import { GraduationCap, BookOpen, Award } from "lucide-react";
+import { GraduationCap, BookOpen, Award, ArrowRight, Users, Globe } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import heroBg from "@/assets/hero-bg.jpg";
+
+const AnimatedCounter = ({ target, suffix = "" }: { target: number; suffix?: string }) => {
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !started.current) {
+          started.current = true;
+          const duration = 2000;
+          const start = performance.now();
+          const animate = (now: number) => {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            setCount(Math.floor(eased * target));
+            if (progress < 1) requestAnimationFrame(animate);
+          };
+          requestAnimationFrame(animate);
+        }
+      },
+      { threshold: 0.5 }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [target]);
+
+  return <span ref={ref}>{count}{suffix}</span>;
+};
 
 const HeroSection = () => {
   return (
     <section id="home" className="relative min-h-screen flex items-center overflow-hidden">
-      {/* Background image */}
+      {/* Background */}
       <div className="absolute inset-0">
         <img src={heroBg} alt="Students learning together" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-primary/80" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/85 to-navy-dark/95" />
+      </div>
+
+      {/* Floating orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 right-1/4 w-72 h-72 rounded-full bg-accent/10 blur-3xl animate-pulse-glow" />
+        <div className="absolute bottom-1/3 left-1/6 w-56 h-56 rounded-full bg-accent/5 blur-3xl animate-pulse-glow" style={{ animationDelay: "1.5s" }} />
       </div>
 
       <div className="container mx-auto relative z-10 py-32 md:py-40">
-        <div className="max-w-3xl">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-          >
-            <span className="inline-block bg-accent/20 text-accent px-4 py-1.5 rounded-full text-sm font-semibold mb-6 border border-accent/30">
-              Cambridge IGCSE · AS & A Levels · IB
-            </span>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground leading-tight mb-6">
-              Accelerate Your{" "}
-              <span className="text-accent">Academic Success</span>
-            </h1>
-            <p className="text-lg md:text-xl text-primary-foreground/80 mb-10 max-w-2xl leading-relaxed">
-              Expert online tutoring and personalized guidance for students pursuing
-              internationally recognized curricula. Join learners worldwide and unlock your full potential.
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-4"
-          >
-            <a
-              href="#contact"
-              className="bg-accent text-accent-foreground px-8 py-4 rounded-lg text-base font-semibold hover:opacity-90 transition-opacity text-center"
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          {/* Left content */}
+          <div>
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7 }}
             >
-              Book a Free Consultation
-            </a>
-            <a
-              href="#programs"
-              className="border-2 border-primary-foreground/30 text-primary-foreground px-8 py-4 rounded-lg text-base font-semibold hover:bg-primary-foreground/10 transition-colors text-center"
-            >
-              Explore Programs
-            </a>
-          </motion.div>
+              <span className="inline-flex items-center gap-2 glass rounded-full px-5 py-2 text-sm font-semibold text-accent mb-8">
+                <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                Cambridge IGCSE · AS & A Levels · IB
+              </span>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-display font-bold text-primary-foreground leading-[1.1] mb-8">
+                International Academic{" "}
+                <span className="text-accent">Excellence</span>{" "}
+                Starts Here
+              </h1>
+              <p className="text-lg md:text-xl text-primary-foreground/75 mb-10 max-w-xl leading-relaxed">
+                Expert tutoring for Cambridge IGCSE, A Levels, and IB students worldwide.
+                Personalized guidance to unlock your full potential.
+              </p>
+            </motion.div>
 
-          {/* Stats */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.3 }}
+              className="flex flex-col sm:flex-row gap-4"
+            >
+              <a
+                href="#contact"
+                className="bg-accent text-accent-foreground px-8 py-4 rounded-xl text-base font-semibold hover:shadow-lg hover:shadow-accent/20 transition-all text-center inline-flex items-center justify-center gap-2 group"
+              >
+                Book a Free Consultation
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </a>
+              <a
+                href="#programs"
+                className="glass text-primary-foreground px-8 py-4 rounded-xl text-base font-semibold hover:bg-primary-foreground/10 transition-all text-center"
+              >
+                Explore Programs
+              </a>
+            </motion.div>
+          </div>
+
+          {/* Right - Stats cards */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.7, delay: 0.6 }}
-            className="mt-16 grid grid-cols-3 gap-6 max-w-lg"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="hidden lg:grid grid-cols-2 gap-5"
           >
             {[
-              { icon: GraduationCap, label: "IGCSE & A Levels", sub: "Full support" },
-              { icon: BookOpen, label: "IB Programme", sub: "All subjects" },
-              { icon: Award, label: "100% Online", sub: "Worldwide" },
-            ].map(({ icon: Icon, label, sub }) => (
-              <div key={label} className="flex flex-col items-center text-center gap-2">
-                <Icon className="w-7 h-7 text-accent" />
-                <span className="text-sm font-semibold text-primary-foreground">{label}</span>
-                <span className="text-xs text-primary-foreground/60">{sub}</span>
-              </div>
+              { icon: Users, value: 500, suffix: "+", label: "Students Supported", color: "text-accent" },
+              { icon: GraduationCap, value: 25, suffix: "+", label: "Expert Tutors", color: "text-gold-light" },
+              { icon: Globe, value: 15, suffix: "+", label: "Countries Served", color: "text-accent" },
+              { icon: Award, value: 98, suffix: "%", label: "Satisfaction Rate", color: "text-gold-light" },
+            ].map(({ icon: Icon, value, suffix, label, color }, i) => (
+              <motion.div
+                key={label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.6 + i * 0.1 }}
+                className="glass-card rounded-2xl p-6 hover:scale-[1.02] transition-transform"
+              >
+                <Icon className={`w-8 h-8 ${color} mb-3`} />
+                <div className="text-3xl font-bold text-primary-foreground mb-1">
+                  <AnimatedCounter target={value} suffix={suffix} />
+                </div>
+                <p className="text-sm text-primary-foreground/60">{label}</p>
+              </motion.div>
             ))}
           </motion.div>
         </div>
+
+        {/* Mobile stats strip */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.7, delay: 0.6 }}
+          className="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-4 lg:hidden"
+        >
+          {[
+            { icon: Users, label: "500+ Students" },
+            { icon: GraduationCap, label: "25+ Tutors" },
+            { icon: Globe, label: "15+ Countries" },
+            { icon: Award, label: "98% Satisfaction" },
+          ].map(({ icon: Icon, label }) => (
+            <div key={label} className="glass-card rounded-xl p-4 flex items-center gap-3">
+              <Icon className="w-5 h-5 text-accent flex-shrink-0" />
+              <span className="text-xs font-semibold text-primary-foreground">{label}</span>
+            </div>
+          ))}
+        </motion.div>
       </div>
     </section>
   );

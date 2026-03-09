@@ -22,7 +22,7 @@ const AboutSection = () => {
           <motion.span variants={fadeUp} custom={0} className="text-accent font-semibold text-sm uppercase tracking-widest">
             About Us
           </motion.span>
-          <motion.h2 variants={fadeUp} custom={1} className="font-display text-3xl md:text-4xl font-bold text-foreground mt-3 mb-6">
+          <motion.h2 variants={fadeUp} custom={1} className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mt-3 mb-6">
             Empowering Students to{" "}
             <span className="text-accent">Thrive Globally</span>
           </motion.h2>
@@ -58,10 +58,10 @@ const AboutSection = () => {
               viewport={{ once: true, margin: "-50px" }}
               variants={fadeUp}
               custom={i}
-              className="bg-card rounded-xl p-8 border border-border shadow-sm hover:shadow-md transition-shadow"
+              className="bg-card rounded-2xl p-8 border border-border premium-shadow-sm hover:premium-shadow hover:border-accent/20 transition-all duration-300 group"
             >
-              <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-5">
-                <Icon className="w-6 h-6 text-accent" />
+              <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mb-5 group-hover:bg-accent/20 group-hover:scale-110 transition-all duration-300">
+                <Icon className="w-7 h-7 text-accent" />
               </div>
               <h3 className="font-display text-xl font-bold text-foreground mb-3">{title}</h3>
               <p className="text-muted-foreground leading-relaxed">{desc}</p>
