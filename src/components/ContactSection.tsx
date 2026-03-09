@@ -43,9 +43,9 @@ const ContactSection = () => {
           <div className="grid lg:grid-cols-5 gap-8">
             <div className="lg:col-span-2 flex flex-col gap-5">
               {[
-                { icon: Mail, title: t("contact.emailUs"), desc: "contact@edurushacademy.com" },
+                { icon: Mail, title: t("contact.emailUs"), desc: "info.edurushacademy@gmail.com" },
                 { icon: Clock, title: t("contact.responseTime"), desc: t("contact.responseTimeVal") },
-                { icon: Phone, title: t("contact.callUs"), desc: "+216 XX XXX XXX" },
+                { icon: Phone, title: t("contact.callUs"), desc: "+216 48 044 486" },
               ].map(({ icon: Icon, title, desc }, i) => (
                 <motion.div key={title} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1, duration: 0.5 }} className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm flex items-start gap-4">
                   <div className="w-11 h-11 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0"><Icon className="w-5 h-5 text-accent" /></div>
