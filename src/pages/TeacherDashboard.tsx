@@ -5,9 +5,10 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Users, Calendar, FileText, BookOpen, MessageSquare,
-  Settings, LogOut, ClipboardCheck, Home
+  Settings, LogOut, ClipboardCheck, Home, UserCog
 } from "lucide-react";
 import { BookingRequestCard } from "@/components/BookingRequestCard";
+import { TeacherProfileSetup } from "@/components/TeacherProfileSetup";
 
 const menuItems = [
   { key: "myStudents", icon: Users },
@@ -16,6 +17,7 @@ const menuItems = [
   { key: "sessionCalendar", icon: Calendar },
   { key: "bookingRequests", icon: ClipboardCheck },
   { key: "messages", icon: MessageSquare },
+  { key: "profileSetup", icon: UserCog },
   { key: "settings", icon: Settings },
 ];
 
@@ -56,7 +58,6 @@ const TeacherDashboard = () => {
   const fetchSessions = async () => {
     if (!user) return;
     
-    // Fetch sessions with student names
     const { data } = await supabase
       .from("booking_sessions")
       .select("*")
@@ -64,7 +65,6 @@ const TeacherDashboard = () => {
       .order("requested_date", { ascending: true });
     
     if (data) {
-      // Fetch student profiles for names
       const studentIds = [...new Set(data.map(s => s.student_id))];
       const { data: profiles } = await supabase
         .from("profiles")
@@ -93,7 +93,80 @@ const TeacherDashboard = () => {
 
   const pendingSessions = sessions.filter(s => s.status === "pending");
   const upcomingSessions = sessions.filter(s => s.status === "accepted");
+  const completedSessions = sessions.filter(s => s.status === "completed");
   const uniqueStudents = new Set(sessions.map(s => s.student_id)).size;
+
+  const renderContent = () => {
+    if (activeTab === "profileSetup") {
+      return <TeacherProfileSetup userId={user.id} />;
+    }
+
+    return (
+      <>
+        {/* Quick stats - all dynamic */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+          {[
+            { label: t("dashboard.myStudents"), value: String(uniqueStudents), icon: Users },
+            { label: t("dashboard.upcomingSessions"), value: String(upcomingSessions.length), icon: Calendar },
+            { label: t("dashboard.bookingRequests"), value: String(pendingSessions.length), icon: ClipboardCheck },
+            { label: "Completed", value: String(completedSessions.length), icon: FileText },
+          ].map(({ label, value, icon: Icon }) => (
+            <div key={label} className="bg-card rounded-2xl border border-border p-5 premium-shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <Icon className="w-5 h-5 text-accent" />
+                <span className="text-2xl font-bold text-foreground">{value}</span>
+              </div>
+              <p className="text-sm text-muted-foreground">{label}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Booking Requests */}
+          <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
+            <h3 className="font-display text-lg font-bold text-foreground mb-4">
+              {t("dashboard.bookingRequests")}
+            </h3>
+            <div className="space-y-3">
+              {pendingSessions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No pending requests</p>
+              ) : (
+                pendingSessions.slice(0, 5).map((session) => (
+                  <BookingRequestCard
+                    key={session.id}
+                    session={session}
+                    onStatusChange={fetchSessions}
+                    variant="teacher"
+                  />
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Upcoming Sessions */}
+          <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
+            <h3 className="font-display text-lg font-bold text-foreground mb-4">
+              {t("dashboard.sessionCalendar")}
+            </h3>
+            <div className="space-y-3">
+              {upcomingSessions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t("dashboard.noSessions")}</p>
+              ) : (
+                upcomingSessions.slice(0, 5).map((session) => (
+                  <BookingRequestCard
+                    key={session.id}
+                    session={session}
+                    onStatusChange={fetchSessions}
+                    variant="teacher"
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -111,7 +184,7 @@ const TeacherDashboard = () => {
               }`}
             >
               <Icon className="w-4 h-4" />
-              {t(`dashboard.${key}`)}
+              {key === "profileSetup" ? "Profile Setup" : t(`dashboard.${key}`)}
             </button>
           ))}
         </nav>
@@ -132,66 +205,7 @@ const TeacherDashboard = () => {
           </h1>
           <p className="text-muted-foreground mb-8">{t("auth.teacher")} Dashboard</p>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-            {[
-              { label: t("dashboard.myStudents"), value: String(uniqueStudents), icon: Users },
-              { label: t("dashboard.upcomingSessions"), value: String(upcomingSessions.length), icon: Calendar },
-              { label: t("dashboard.bookingRequests"), value: String(pendingSessions.length), icon: ClipboardCheck },
-              { label: t("dashboard.messages"), value: "2", icon: MessageSquare },
-            ].map(({ label, value, icon: Icon }) => (
-              <div key={label} className="bg-card rounded-2xl border border-border p-5 premium-shadow-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <Icon className="w-5 h-5 text-accent" />
-                  <span className="text-2xl font-bold text-foreground">{value}</span>
-                </div>
-                <p className="text-sm text-muted-foreground">{label}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid lg:grid-cols-2 gap-6">
-            {/* Booking Requests */}
-            <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
-              <h3 className="font-display text-lg font-bold text-foreground mb-4">
-                {t("dashboard.bookingRequests")}
-              </h3>
-              <div className="space-y-3">
-                {pendingSessions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No pending requests</p>
-                ) : (
-                  pendingSessions.slice(0, 5).map((session) => (
-                    <BookingRequestCard
-                      key={session.id}
-                      session={session}
-                      onStatusChange={fetchSessions}
-                      variant="teacher"
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Upcoming Sessions */}
-            <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
-              <h3 className="font-display text-lg font-bold text-foreground mb-4">
-                {t("dashboard.sessionCalendar")}
-              </h3>
-              <div className="space-y-3">
-                {upcomingSessions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{t("dashboard.noSessions")}</p>
-                ) : (
-                  upcomingSessions.slice(0, 5).map((session) => (
-                    <BookingRequestCard
-                      key={session.id}
-                      session={session}
-                      onStatusChange={fetchSessions}
-                      variant="teacher"
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
+          {renderContent()}
         </motion.div>
       </main>
     </div>
