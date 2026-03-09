@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, FlaskConical, Star, ArrowRight, CheckCircle2 } from "lucide-react";
+import { BookOpen, FlaskConical, Star, ArrowRight, CheckCircle2, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { BookSessionDialog } from "@/components/BookSessionDialog";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -10,6 +13,17 @@ const fadeUp = {
 
 const ProgramsSection = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [bookDialogOpen, setBookDialogOpen] = useState(false);
+
+  const handleBookSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth");
+    } else {
+      setBookDialogOpen(true);
+    }
+  };
 
   const programs = [
     {
@@ -59,15 +73,21 @@ const ProgramsSection = () => {
                   <a href="#contact" className="inline-flex items-center gap-2 text-accent font-semibold text-sm hover:gap-3 transition-all">
                     {t("programs.learnMore")} <ArrowRight className="w-4 h-4" />
                   </a>
-                  <Link to="/dashboard/student" className="inline-flex items-center gap-2 bg-accent text-accent-foreground px-5 py-2 rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-accent/20 transition-all">
-                    {t("programs.bookProgram")} <ArrowRight className="w-4 h-4" />
-                  </Link>
+                  <button
+                    onClick={handleBookSession}
+                    className="inline-flex items-center gap-2 bg-accent text-accent-foreground px-5 py-2 rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-accent/20 transition-all"
+                  >
+                    <Plus className="w-4 h-4" />
+                    {t("dashboard.bookSession")}
+                  </button>
                 </div>
               </div>
             </motion.div>
           ))}
         </div>
       </div>
+
+      <BookSessionDialog open={bookDialogOpen} onOpenChange={setBookDialogOpen} />
     </section>
   );
 };
