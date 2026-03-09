@@ -78,6 +78,10 @@ export function BookingRequestCard({ session, onStatusChange, variant = "teacher
 
       if (error) throw error;
 
+      supabase.functions.invoke("booking-notifications", {
+        body: { session_id: session.id, event_type: "declined" },
+      }).catch(console.error);
+
       toast({ title: t("booking.declined"), description: t("booking.declinedDesc") });
       onStatusChange();
     } catch (err: any) {
