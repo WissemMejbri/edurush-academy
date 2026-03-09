@@ -23,7 +23,10 @@ const Footer = () => {
       <div className="container mx-auto">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10 mb-16">
           <div>
-            <span className="font-display text-2xl font-bold text-primary-foreground">Edu<span className="text-accent">Rush</span></span>
+            <div className="flex items-center gap-2">
+              <img src={logoImg} alt="EduRush Academy" className="h-10 w-auto rounded-full" />
+              <span className="font-display text-2xl font-bold text-primary-foreground">Edu<span className="text-accent">Rush</span></span>
+            </div>
             <p className="text-primary-foreground/50 mt-4 text-sm leading-relaxed max-w-xs">{t("footer.description")}</p>
             <div className="flex gap-3 mt-6">
               {socialLinks.map(({ Icon, href }, i) => (

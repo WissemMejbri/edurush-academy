@@ -31,10 +31,10 @@ const Navbar = () => {
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-card/95 backdrop-blur-md shadow-lg" : "bg-transparent"}`}>
       <div className="container mx-auto flex items-center justify-between h-16 md:h-20">
         <a href="#home" className="flex items-center gap-2">
+          <img src={logoImg} alt="EduRush Academy" className="h-10 md:h-12 w-auto rounded-full" />
           <span className="font-display text-xl md:text-2xl font-bold text-primary">
             Edu<span className="text-accent">Rush</span>
           </span>
-          <span className="hidden sm:inline text-xs font-medium tracking-widest uppercase text-muted-foreground">{t("nav.academy")}</span>
         </a>
 
         <div className="hidden lg:flex items-center gap-6">
