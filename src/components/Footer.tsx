@@ -1,4 +1,5 @@
 import { Mail, MapPin, Phone, Facebook, Linkedin, Instagram } from "lucide-react";
+import logoImg from "@/assets/edurush-logo.jpeg";
 import { useTranslation } from "react-i18next";
 
 const TikTokIcon = ({ className }: { className?: string }) => (
