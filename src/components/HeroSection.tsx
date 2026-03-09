@@ -77,9 +77,8 @@ const HeroSection = () => {
           </div>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.4 }} className="hidden lg:grid grid-cols-2 gap-5">
             {[
-              { icon: Users, value: 500, suffix: "+", label: t("hero.students"), color: "text-accent" },
+              { icon: Users, value: 260, suffix: "+", label: t("hero.students"), color: "text-accent" },
               { icon: GraduationCap, value: 25, suffix: "+", label: t("hero.tutors"), color: "text-gold-light" },
-              { icon: Globe, value: 15, suffix: "+", label: t("hero.countries"), color: "text-accent" },
               { icon: Award, value: 98, suffix: "%", label: t("hero.satisfaction"), color: "text-gold-light" },
             ].map(({ icon: Icon, value, suffix, label, color }, i) => (
               <motion.div key={label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.6 + i * 0.1 }} className="glass-card rounded-2xl p-6 hover:scale-[1.02] transition-transform">
