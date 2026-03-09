@@ -55,9 +55,14 @@ const ProgramsSection = () => {
                     </li>
                   ))}
                 </ul>
-                <a href="#contact" className="inline-flex items-center gap-2 text-accent font-semibold text-sm hover:gap-3 transition-all">
-                  {t("programs.learnMore")} <ArrowRight className="w-4 h-4" />
-                </a>
+                <div className="flex items-center gap-4">
+                  <a href="#contact" className="inline-flex items-center gap-2 text-accent font-semibold text-sm hover:gap-3 transition-all">
+                    {t("programs.learnMore")} <ArrowRight className="w-4 h-4" />
+                  </a>
+                  <Link to="/dashboard/student" className="inline-flex items-center gap-2 bg-accent text-accent-foreground px-5 py-2 rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-accent/20 transition-all">
+                    {t("programs.bookProgram")} <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
               </div>
             </motion.div>
           ))}
