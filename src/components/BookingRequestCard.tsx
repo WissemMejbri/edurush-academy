@@ -1,19 +1,16 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Calendar, Clock, User, BookOpen, Check, X } from "lucide-react";
+import { Calendar, Clock, User, BookOpen, Check, X, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { StatusBadge } from "@/components/dashboard/StatusBadge";
 
 interface BookingSession {
   id: string;
@@ -28,6 +25,8 @@ interface BookingSession {
   notes: string | null;
   zoom_link: string | null;
   student_name?: string;
+  proposed_date?: string | null;
+  proposed_time?: string | null;
 }
 
 interface BookingRequestCardProps {
@@ -41,7 +40,17 @@ export function BookingRequestCard({ session, onStatusChange, variant = "teacher
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showAcceptDialog, setShowAcceptDialog] = useState(false);
+  const [showProposeDialog, setShowProposeDialog] = useState(false);
   const [zoomLink, setZoomLink] = useState("");
+  const [proposedDate, setProposedDate] = useState("");
+  const [proposedTime, setProposedTime] = useState("");
+  const [proposeMessage, setProposeMessage] = useState("");
+
+  const endTime = (time: string, duration: number) => {
+    const [h, m] = time.split(":").map(Number);
+    const totalMin = h * 60 + m + duration;
+    return `${String(Math.floor(totalMin / 60)).padStart(2, "0")}:${String(totalMin % 60).padStart(2, "0")}`;
+  };
 
   const handleAccept = async () => {
     setLoading(true);
@@ -50,10 +59,8 @@ export function BookingRequestCard({ session, onStatusChange, variant = "teacher
         .from("booking_sessions")
         .update({ status: "accepted", zoom_link: zoomLink || null })
         .eq("id", session.id);
-
       if (error) throw error;
 
-      // Send email notification
       supabase.functions.invoke("booking-notifications", {
         body: { session_id: session.id, event_type: "accepted", zoom_link: zoomLink || undefined },
       }).catch(console.error);
@@ -75,7 +82,6 @@ export function BookingRequestCard({ session, onStatusChange, variant = "teacher
         .from("booking_sessions")
         .update({ status: "declined" })
         .eq("id", session.id);
-
       if (error) throw error;
 
       supabase.functions.invoke("booking-notifications", {
@@ -91,6 +97,30 @@ export function BookingRequestCard({ session, onStatusChange, variant = "teacher
     }
   };
 
+  const handlePropose = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("booking_sessions")
+        .update({
+          status: "pending",
+          proposed_date: proposedDate || null,
+          proposed_time: proposedTime || null,
+          notes: proposeMessage ? `[Teacher proposal] ${proposeMessage}` : session.notes,
+        })
+        .eq("id", session.id);
+      if (error) throw error;
+
+      toast({ title: "New time proposed", description: "The student will be notified." });
+      setShowProposeDialog(false);
+      onStatusChange();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCancel = async () => {
     setLoading(true);
     try {
@@ -98,7 +128,6 @@ export function BookingRequestCard({ session, onStatusChange, variant = "teacher
         .from("booking_sessions")
         .update({ status: "cancelled" })
         .eq("id", session.id);
-
       if (error) throw error;
 
       supabase.functions.invoke("booking-notifications", {
@@ -115,19 +144,9 @@ export function BookingRequestCard({ session, onStatusChange, variant = "teacher
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString(undefined, {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
+    return new Date(dateStr + "T00:00:00").toLocaleDateString(undefined, {
+      weekday: "short", month: "short", day: "numeric",
     });
-  };
-
-  const statusColors: Record<string, string> = {
-    pending: "bg-amber-500/10 text-amber-600",
-    accepted: "bg-emerald-500/10 text-emerald-600",
-    declined: "bg-destructive/10 text-destructive",
-    cancelled: "bg-muted text-muted-foreground",
-    completed: "bg-primary/10 text-primary",
   };
 
   return (
@@ -137,11 +156,9 @@ export function BookingRequestCard({ session, onStatusChange, variant = "teacher
           <div className="flex-1 space-y-2">
             <div className="flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-accent" />
-              <span className="font-semibold text-foreground">
-                {session.subject} — {session.level}
-              </span>
+              <span className="font-semibold text-foreground">{session.subject} — {session.level}</span>
             </div>
-            
+
             {variant === "teacher" && session.student_name && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <User className="w-4 h-4" />
@@ -156,62 +173,48 @@ export function BookingRequestCard({ session, onStatusChange, variant = "teacher
               </span>
               <span className="flex items-center gap-1">
                 <Clock className="w-4 h-4" />
-                {session.requested_time}
+                {session.requested_time} – {endTime(session.requested_time, session.duration_minutes)}
               </span>
+              <span className="text-xs">{session.duration_minutes / 60}h</span>
             </div>
 
             {session.notes && (
               <p className="text-sm text-muted-foreground italic">"{session.notes}"</p>
             )}
 
+            {session.proposed_date && (
+              <p className="text-xs text-accent font-medium">
+                📅 Proposed: {formatDate(session.proposed_date)} at {session.proposed_time}
+              </p>
+            )}
+
             {session.status === "accepted" && session.zoom_link && (
-              <a
-                href={session.zoom_link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-accent hover:underline"
-              >
+              <a href={session.zoom_link} target="_blank" rel="noopener noreferrer"
+                className="text-sm text-accent hover:underline">
                 🔗 Join Session
               </a>
             )}
           </div>
 
           <div className="flex flex-col items-end gap-2">
-            <span className={`text-xs font-medium px-3 py-1 rounded-full ${statusColors[session.status]}`}>
-              {t(`booking.status.${session.status}`)}
-            </span>
+            <StatusBadge status={session.status} />
 
             {variant === "teacher" && session.status === "pending" && (
-              <div className="flex gap-2 mt-2">
-                <Button
-                  size="sm"
-                  onClick={() => setShowAcceptDialog(true)}
-                  disabled={loading}
-                  className="gap-1"
-                >
-                  <Check className="w-4 h-4" />
-                  {t("booking.accept")}
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Button size="sm" onClick={() => setShowAcceptDialog(true)} disabled={loading} className="gap-1">
+                  <Check className="w-4 h-4" /> Accept
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleDecline}
-                  disabled={loading}
-                  className="gap-1"
-                >
-                  <X className="w-4 h-4" />
-                  {t("booking.decline")}
+                <Button size="sm" variant="outline" onClick={() => setShowProposeDialog(true)} disabled={loading} className="gap-1">
+                  <MessageSquare className="w-4 h-4" /> Propose
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleDecline} disabled={loading} className="gap-1 text-destructive">
+                  <X className="w-4 h-4" /> Decline
                 </Button>
               </div>
             )}
 
             {variant === "student" && session.status === "pending" && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={loading}
-              >
+              <Button size="sm" variant="outline" onClick={handleCancel} disabled={loading}>
                 {t("booking.cancel")}
               </Button>
             )}
@@ -219,32 +222,54 @@ export function BookingRequestCard({ session, onStatusChange, variant = "teacher
         </div>
       </div>
 
-      {/* Accept Dialog with Zoom Link */}
+      {/* Accept Dialog */}
       <Dialog open={showAcceptDialog} onOpenChange={setShowAcceptDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("booking.confirmAccept")}</DialogTitle>
             <DialogDescription>{t("booking.confirmAcceptDesc")}</DialogDescription>
           </DialogHeader>
-          
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>{t("booking.zoomLink")}</Label>
-              <Input
-                placeholder="https://zoom.us/j/..."
-                value={zoomLink}
-                onChange={(e) => setZoomLink(e.target.value)}
-              />
+              <Input placeholder="https://zoom.us/j/..." value={zoomLink} onChange={e => setZoomLink(e.target.value)} />
               <p className="text-xs text-muted-foreground">{t("booking.zoomLinkHint")}</p>
             </div>
           </div>
-
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAcceptDialog(false)}>
-              {t("booking.back")}
-            </Button>
-            <Button onClick={handleAccept} disabled={loading}>
-              {loading ? "..." : t("booking.confirmAndAccept")}
+            <Button variant="outline" onClick={() => setShowAcceptDialog(false)}>Cancel</Button>
+            <Button onClick={handleAccept} disabled={loading}>{loading ? "..." : t("booking.confirmAndAccept")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Propose New Time Dialog */}
+      <Dialog open={showProposeDialog} onOpenChange={setShowProposeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Propose New Time</DialogTitle>
+            <DialogDescription>Suggest an alternative date and time for this session.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>New Date</Label>
+                <Input type="date" value={proposedDate} onChange={e => setProposedDate(e.target.value)} min={new Date().toISOString().split("T")[0]} />
+              </div>
+              <div className="space-y-2">
+                <Label>New Time</Label>
+                <Input type="time" value={proposedTime} onChange={e => setProposedTime(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Message (optional)</Label>
+              <Textarea placeholder="Let the student know why..." value={proposeMessage} onChange={e => setProposeMessage(e.target.value)} rows={2} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowProposeDialog(false)}>Cancel</Button>
+            <Button onClick={handlePropose} disabled={loading || (!proposedDate && !proposedTime)}>
+              {loading ? "..." : "Send Proposal"}
             </Button>
           </DialogFooter>
         </DialogContent>

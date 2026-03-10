@@ -1,22 +1,27 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Users, Calendar, FileText, BookOpen, MessageSquare,
-  Settings, LogOut, ClipboardCheck, Home, UserCog
+  Settings, LogOut, ClipboardCheck, Home, UserCog, Menu
 } from "lucide-react";
 import { BookingRequestCard } from "@/components/BookingRequestCard";
 import { TeacherProfileSetup } from "@/components/TeacherProfileSetup";
+import { TeacherAvailability } from "@/components/dashboard/TeacherAvailability";
+import { SessionCalendar } from "@/components/dashboard/SessionCalendar";
+import edurushLogo from "@/assets/edurush-logo.jpeg";
 
 const menuItems = [
+  { key: "overview", icon: BookOpen },
+  { key: "bookingRequests", icon: ClipboardCheck },
+  { key: "sessionCalendar", icon: Calendar },
   { key: "myStudents", icon: Users },
   { key: "courseMaterials", icon: BookOpen },
   { key: "assignments", icon: FileText },
-  { key: "sessionCalendar", icon: Calendar },
-  { key: "bookingRequests", icon: ClipboardCheck },
   { key: "messages", icon: MessageSquare },
+  { key: "availability", icon: Calendar },
   { key: "profileSetup", icon: UserCog },
   { key: "settings", icon: Settings },
 ];
@@ -34,14 +39,17 @@ interface BookingSession {
   notes: string | null;
   zoom_link: string | null;
   student_name?: string;
+  proposed_date?: string | null;
+  proposed_time?: string | null;
 }
 
 const TeacherDashboard = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState("bookingRequests");
+  const [activeTab, setActiveTab] = useState("overview");
   const [sessions, setSessions] = useState<BookingSession[]>([]);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -55,34 +63,31 @@ const TeacherDashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
     if (!user) return;
-    
     const { data } = await supabase
       .from("booking_sessions")
       .select("*")
       .eq("teacher_id", user.id)
       .order("requested_date", { ascending: true });
-    
+
     if (data) {
       const studentIds = [...new Set(data.map(s => s.student_id))];
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id, full_name")
         .in("user_id", studentIds);
-      
       const profileMap = new Map(profiles?.map(p => [p.user_id, p.full_name]) || []);
-      
       setSessions(data.map(s => ({
         ...s,
         student_name: profileMap.get(s.student_id) || "Unknown Student"
       })));
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     if (user) fetchSessions();
-  }, [user]);
+  }, [user, fetchSessions]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -96,95 +101,139 @@ const TeacherDashboard = () => {
   const completedSessions = sessions.filter(s => s.status === "completed");
   const uniqueStudents = new Set(sessions.map(s => s.student_id)).size;
 
+  const getLabel = (key: string) => {
+    const map: Record<string, string> = {
+      overview: "Overview",
+      bookingRequests: t("dashboard.bookingRequests"),
+      sessionCalendar: t("dashboard.sessionCalendar"),
+      myStudents: t("dashboard.myStudents"),
+      courseMaterials: t("dashboard.courseMaterials"),
+      assignments: t("dashboard.assignments"),
+      messages: t("dashboard.messages"),
+      availability: "Availability",
+      profileSetup: "Profile Setup",
+      settings: t("dashboard.settings"),
+    };
+    return map[key] || key;
+  };
+
   const renderContent = () => {
-    if (activeTab === "profileSetup") {
-      return <TeacherProfileSetup userId={user.id} />;
-    }
-
-    return (
-      <>
-        {/* Quick stats - all dynamic */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-          {[
-            { label: t("dashboard.myStudents"), value: String(uniqueStudents), icon: Users },
-            { label: t("dashboard.upcomingSessions"), value: String(upcomingSessions.length), icon: Calendar },
-            { label: t("dashboard.bookingRequests"), value: String(pendingSessions.length), icon: ClipboardCheck },
-            { label: "Completed", value: String(completedSessions.length), icon: FileText },
-          ].map(({ label, value, icon: Icon }) => (
-            <div key={label} className="bg-card rounded-2xl border border-border p-5 premium-shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <Icon className="w-5 h-5 text-accent" />
-                <span className="text-2xl font-bold text-foreground">{value}</span>
-              </div>
-              <p className="text-sm text-muted-foreground">{label}</p>
+    switch (activeTab) {
+      case "overview":
+        return (
+          <>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+              {[
+                { label: t("dashboard.myStudents"), value: String(uniqueStudents), icon: Users },
+                { label: t("dashboard.upcomingSessions"), value: String(upcomingSessions.length), icon: Calendar },
+                { label: t("dashboard.bookingRequests"), value: String(pendingSessions.length), icon: ClipboardCheck },
+                { label: "Completed", value: String(completedSessions.length), icon: FileText },
+              ].map(({ label, value, icon: Icon }) => (
+                <div key={label} className="bg-card rounded-2xl border border-border p-5 premium-shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <Icon className="w-5 h-5 text-accent" />
+                    <span className="text-2xl font-bold text-foreground">{value}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{label}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Booking Requests */}
+            <div className="grid lg:grid-cols-2 gap-6">
+              <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
+                <h3 className="font-display text-lg font-bold text-foreground mb-4">{t("dashboard.bookingRequests")}</h3>
+                <div className="space-y-3">
+                  {pendingSessions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No pending requests</p>
+                  ) : pendingSessions.slice(0, 5).map(session => (
+                    <BookingRequestCard key={session.id} session={session} onStatusChange={fetchSessions} variant="teacher" />
+                  ))}
+                </div>
+              </div>
+              <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
+                <h3 className="font-display text-lg font-bold text-foreground mb-4">{t("dashboard.upcomingSessions")}</h3>
+                <div className="space-y-3">
+                  {upcomingSessions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">{t("dashboard.noSessions")}</p>
+                  ) : upcomingSessions.slice(0, 5).map(session => (
+                    <BookingRequestCard key={session.id} session={session} onStatusChange={fetchSessions} variant="teacher" />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>
+        );
+      case "bookingRequests":
+        return (
           <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
-            <h3 className="font-display text-lg font-bold text-foreground mb-4">
-              {t("dashboard.bookingRequests")}
-            </h3>
+            <h3 className="font-display text-lg font-bold text-foreground mb-4">{t("dashboard.bookingRequests")}</h3>
             <div className="space-y-3">
               {pendingSessions.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No pending requests</p>
-              ) : (
-                pendingSessions.slice(0, 5).map((session) => (
-                  <BookingRequestCard
-                    key={session.id}
-                    session={session}
-                    onStatusChange={fetchSessions}
-                    variant="teacher"
-                  />
-                ))
-              )}
+              ) : pendingSessions.map(session => (
+                <BookingRequestCard key={session.id} session={session} onStatusChange={fetchSessions} variant="teacher" />
+              ))}
             </div>
           </div>
-
-          {/* Upcoming Sessions */}
+        );
+      case "sessionCalendar":
+        return <SessionCalendar sessions={sessions} variant="teacher" />;
+      case "availability":
+        return <TeacherAvailability userId={user.id} />;
+      case "profileSetup":
+        return <TeacherProfileSetup userId={user.id} />;
+      case "myStudents":
+      case "courseMaterials":
+      case "assignments":
+      case "messages":
+        return (
+          <div className="bg-card rounded-2xl border border-border p-10 premium-shadow-sm text-center">
+            <p className="text-muted-foreground">{getLabel(activeTab)} — Coming soon</p>
+          </div>
+        );
+      case "settings":
+        return (
           <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
-            <h3 className="font-display text-lg font-bold text-foreground mb-4">
-              {t("dashboard.sessionCalendar")}
-            </h3>
-            <div className="space-y-3">
-              {upcomingSessions.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("dashboard.noSessions")}</p>
-              ) : (
-                upcomingSessions.slice(0, 5).map((session) => (
-                  <BookingRequestCard
-                    key={session.id}
-                    session={session}
-                    onStatusChange={fetchSessions}
-                    variant="teacher"
-                  />
-                ))
-              )}
-            </div>
+            <h3 className="font-display text-lg font-bold text-foreground mb-4">{t("dashboard.settings")}</h3>
+            <p className="text-sm text-muted-foreground">Settings coming soon.</p>
           </div>
-        </div>
-      </>
-    );
+        );
+      default:
+        return null;
+    }
   };
 
   return (
     <div className="min-h-screen bg-background flex">
-      <aside className="w-64 bg-card border-r border-border p-6 hidden md:flex flex-col">
-        <a href="/" className="font-display text-xl font-bold text-primary mb-8 block">
+      {/* Mobile header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border px-4 py-3 flex items-center justify-between">
+        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <Menu className="w-5 h-5 text-foreground" />
+        </button>
+        <span className="font-display text-lg font-bold text-primary">EduRush</span>
+        <div className="w-5" />
+      </div>
+
+      {/* Sidebar */}
+      <aside className={`w-64 bg-card border-r border-border p-6 flex-col fixed md:static top-0 left-0 h-full z-40 transition-transform ${
+        mobileMenuOpen ? "translate-x-0 flex" : "-translate-x-full md:translate-x-0 md:flex hidden"
+      }`}>
+        <a href="/" className="font-display text-xl font-bold text-primary mb-8 flex items-center gap-2">
+          <img src={edurushLogo} alt="EduRush" className="h-10 w-10 rounded-full object-cover" />
           Edu<span className="text-accent">Rush</span>
         </a>
-        <nav className="flex-1 space-y-1">
+        <nav className="flex-1 space-y-1 overflow-y-auto">
           {menuItems.map(({ key, icon: Icon }) => (
             <button
               key={key}
-              onClick={() => setActiveTab(key)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                activeTab === key ? "bg-accent/10 text-accent" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              onClick={() => { setActiveTab(key); setMobileMenuOpen(false); }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                activeTab === key
+                  ? "bg-accent/10 text-accent shadow-sm"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
               <Icon className="w-4 h-4" />
-              {key === "profileSetup" ? "Profile Setup" : t(`dashboard.${key}`)}
+              {getLabel(key)}
             </button>
           ))}
         </nav>
@@ -198,15 +247,29 @@ const TeacherDashboard = () => {
         </div>
       </aside>
 
-      <main className="flex-1 p-6 md:p-10">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-2">
-            {t("dashboard.welcome")}, {user.user_metadata?.full_name || user.email?.split("@")[0]} 👋
-          </h1>
-          <p className="text-muted-foreground mb-8">{t("auth.teacher")} Dashboard</p>
+      {/* Overlay */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 bg-background/50 z-30 md:hidden" onClick={() => setMobileMenuOpen(false)} />
+      )}
 
-          {renderContent()}
-        </motion.div>
+      {/* Main */}
+      <main className="flex-1 p-6 md:p-10 pt-20 md:pt-10">
+        <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-2">
+          {t("dashboard.welcome")}, {user.user_metadata?.full_name || user.email?.split("@")[0]} 👋
+        </h1>
+        <p className="text-muted-foreground mb-8">{t("auth.teacher")} Dashboard</p>
+
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.25 }}
+          >
+            {renderContent()}
+          </motion.div>
+        </AnimatePresence>
       </main>
     </div>
   );
