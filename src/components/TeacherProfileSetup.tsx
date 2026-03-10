@@ -7,12 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { X, Plus, Save } from "lucide-react";
+import { ProfilePictureUpload } from "@/components/dashboard/ProfilePictureUpload";
 
 interface Profile {
   full_name: string | null;
   bio: string | null;
   subjects: string[] | null;
-  hourly_rate: number | null;
   avatar_url: string | null;
 }
 
@@ -36,7 +36,6 @@ export const TeacherProfileSetup = ({ userId, onProfileSaved }: TeacherProfileSe
     full_name: "",
     bio: "",
     subjects: [],
-    hourly_rate: null,
     avatar_url: null,
   });
   const [newSubject, setNewSubject] = useState("");
@@ -48,13 +47,12 @@ export const TeacherProfileSetup = ({ userId, onProfileSaved }: TeacherProfileSe
         .select("*")
         .eq("user_id", userId)
         .single();
-      
+
       if (data) {
         setProfile({
           full_name: data.full_name,
           bio: data.bio,
           subjects: data.subjects || [],
-          hourly_rate: data.hourly_rate,
           avatar_url: data.avatar_url,
         });
       }
@@ -88,12 +86,11 @@ export const TeacherProfileSetup = ({ userId, onProfileSaved }: TeacherProfileSe
           full_name: profile.full_name,
           bio: profile.bio,
           subjects: profile.subjects,
-          hourly_rate: profile.hourly_rate,
         })
         .eq("user_id", userId);
 
       if (error) throw error;
-      
+
       toast({ title: "Profile saved successfully!" });
       onProfileSaved?.();
     } catch (err: any) {
@@ -108,8 +105,21 @@ export const TeacherProfileSetup = ({ userId, onProfileSaved }: TeacherProfileSe
       <h3 className="font-display text-lg font-bold text-foreground mb-6">
         Teacher Profile Setup
       </h3>
-      
+
       <div className="space-y-5">
+        {/* Profile Picture */}
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-3">
+            Profile Picture
+          </label>
+          <ProfilePictureUpload
+            userId={userId}
+            currentUrl={profile.avatar_url}
+            fullName={profile.full_name}
+            onUploaded={(url) => setProfile(prev => ({ ...prev, avatar_url: url }))}
+          />
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
             Full Name
@@ -171,19 +181,6 @@ export const TeacherProfileSetup = ({ userId, onProfileSaved }: TeacherProfileSe
               <Plus className="w-4 h-4" />
             </Button>
           </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
-            Hourly Rate (USD)
-          </label>
-          <Input
-            type="number"
-            value={profile.hourly_rate || ""}
-            onChange={(e) => setProfile(prev => ({ ...prev, hourly_rate: parseFloat(e.target.value) || null }))}
-            placeholder="45"
-            min={0}
-          />
         </div>
 
         <Button onClick={handleSave} disabled={loading} className="w-full gap-2">
