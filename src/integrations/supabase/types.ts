@@ -21,6 +21,8 @@ export type Database = {
           id: string
           level: string
           notes: string | null
+          proposed_date: string | null
+          proposed_time: string | null
           requested_date: string
           requested_time: string
           status: string
@@ -36,6 +38,8 @@ export type Database = {
           id?: string
           level: string
           notes?: string | null
+          proposed_date?: string | null
+          proposed_time?: string | null
           requested_date: string
           requested_time: string
           status?: string
@@ -51,6 +55,8 @@ export type Database = {
           id?: string
           level?: string
           notes?: string | null
+          proposed_date?: string | null
+          proposed_time?: string | null
           requested_date?: string
           requested_time?: string
           status?: string
@@ -95,6 +101,33 @@ export type Database = {
           subjects?: string[] | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      teacher_availability: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          start_time: string
+          teacher_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          start_time: string
+          teacher_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          start_time?: string
+          teacher_id?: string
         }
         Relationships: []
       }
