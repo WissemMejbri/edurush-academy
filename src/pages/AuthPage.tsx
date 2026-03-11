@@ -2,9 +2,13 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, GraduationCap, BookOpen, Shield } from "lucide-react";
+import { ArrowLeft, GraduationCap, BookOpen, Shield, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 type AuthMode = "login" | "signup";
 type Role = "student" | "teacher" | "admin";
@@ -25,21 +29,22 @@ const AuthPage = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
 
-  // Check if user is already logged in and redirect to their dashboard
   useEffect(() => {
     const checkAuthAndRedirect = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        // Fetch user role from database
         const { data: roleData } = await supabase
           .rpc("get_user_role", { _user_id: session.user.id });
-        
         const userRole = roleData || session.user.user_metadata?.role || "student";
         navigate(`/dashboard/${userRole}`);
       }
     };
-    
     checkAuthAndRedirect();
   }, [navigate]);
 
@@ -58,8 +63,6 @@ const AuthPage = () => {
           },
         });
         if (error) throw error;
-        
-        // Auto-confirmed: redirect immediately to dashboard
         if (data.user) {
           toast({ title: t("auth.signupSuccess") });
           navigate(`/dashboard/${role}`);
@@ -67,14 +70,18 @@ const AuthPage = () => {
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        
-        // Fetch the user's actual role from database
+
+        // Handle "Remember Me" — if unchecked, mark session for tab-only
+        if (!rememberMe) {
+          sessionStorage.setItem("edurush_session_only", "true");
+        } else {
+          sessionStorage.removeItem("edurush_session_only");
+        }
+
         if (data.user) {
           const { data: roleData } = await supabase
             .rpc("get_user_role", { _user_id: data.user.id });
-          
           const userRole = roleData || data.user.user_metadata?.role || "student";
-          
           toast({ title: t("auth.loginSuccess") });
           navigate(`/dashboard/${userRole}`);
         }
@@ -83,6 +90,24 @@ const AuthPage = () => {
       toast({ title: err.message || "An error occurred", variant: "destructive" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!resetEmail) return;
+    setResetLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast({ title: "Reset link sent!", description: "Check your email for the password reset link." });
+      setForgotOpen(false);
+      setResetEmail("");
+    } catch (err: any) {
+      toast({ title: err.message, variant: "destructive" });
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -108,7 +133,6 @@ const AuthPage = () => {
             </h1>
           </div>
 
-          {/* Role selector - only show for signup */}
           {mode === "signup" && (
             <div className="mb-6">
               <label className="block text-sm font-medium text-foreground mb-3">{t("auth.loginAs")}</label>
@@ -160,23 +184,40 @@ const AuthPage = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">{t("auth.password")}</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                className="w-full px-4 py-3 rounded-xl border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="w-full px-4 py-3 pr-12 rounded-xl border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
 
             {mode === "login" && (
               <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center gap-2 text-muted-foreground">
-                  <input type="checkbox" className="rounded border-input" />
+                <label className="flex items-center gap-2 text-muted-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="rounded border-input"
+                  />
                   {t("auth.rememberMe")}
                 </label>
-                <button type="button" className="text-accent hover:underline">{t("auth.forgotPassword")}</button>
+                <button type="button" onClick={() => setForgotOpen(true)} className="text-accent hover:underline">
+                  {t("auth.forgotPassword")}
+                </button>
               </div>
             )}
 
@@ -197,6 +238,31 @@ const AuthPage = () => {
           </p>
         </div>
       </motion.div>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("auth.forgotPassword")}</DialogTitle>
+            <DialogDescription>Enter your email address and we'll send you a password reset link.</DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <input
+              type="email"
+              value={resetEmail}
+              onChange={(e) => setResetEmail(e.target.value)}
+              placeholder="your@email.com"
+              className="w-full px-4 py-3 rounded-xl border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setForgotOpen(false)}>Cancel</Button>
+            <Button onClick={handleForgotPassword} disabled={resetLoading || !resetEmail}>
+              {resetLoading ? "Sending..." : "Send Reset Link"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
