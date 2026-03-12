@@ -230,7 +230,8 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
         requested_time: formData.time,
         duration_minutes: formData.duration,
         notes: formData.notes || null,
-      }).select().single();
+        record_lesson: formData.record_lesson,
+      } as any).select().single();
 
       if (error) throw error;
 
