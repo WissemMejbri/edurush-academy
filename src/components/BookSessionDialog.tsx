@@ -411,8 +411,8 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
               </div>
             )}
 
-            {/* Step 3: Confirm */}
-            {step === 3 && (
+            {/* Step 2: Confirm */}
+            {step === 2 && (
               <div className="space-y-4">
                 <div className="bg-muted/50 rounded-xl p-4 space-y-2">
                   <div className="flex justify-between text-sm">
