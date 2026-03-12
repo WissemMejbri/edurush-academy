@@ -135,7 +135,7 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
 
   // Auto-assign teacher when subject changes
   useEffect(() => {
-    if (formData.subject && filteredTeachers.length > 0 && !formData.teacher_id) {
+    if (formData.subject && filteredTeachers.length > 0) {
       setFormData(p => ({ ...p, teacher_id: filteredTeachers[0].user_id }));
     }
   }, [formData.subject, filteredTeachers.length]);
