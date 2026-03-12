@@ -136,8 +136,9 @@ const AdminDashboard = () => {
     if (!newTeacher.fullName || !newTeacher.email || !newTeacher.password || !newTeacher.subjects) return;
     setAddingTeacher(true);
     try {
+      const subjectsArray = newTeacher.subjects.split(",").map(s => s.trim()).filter(Boolean);
       const { error } = await supabase.functions.invoke("admin-create-teacher", {
-        body: { full_name: newTeacher.fullName, email: newTeacher.email, password: newTeacher.password },
+        body: { full_name: newTeacher.fullName, email: newTeacher.email, password: newTeacher.password, subjects: subjectsArray },
       });
       if (error) throw error;
       toast({ title: "Teacher created!", description: `${newTeacher.email} can now log in.` });
