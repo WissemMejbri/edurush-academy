@@ -256,7 +256,6 @@ const AdminDashboard = () => {
               <Button onClick={handleAddTeacher} disabled={addingTeacher || !newTeacher.fullName || !newTeacher.email || !newTeacher.password || !newTeacher.subjects} className="w-full">
                 {addingTeacher ? "Creating..." : "Create Teacher Account"}
               </Button>
-              </Button>
             </div>
           </div>
         );
