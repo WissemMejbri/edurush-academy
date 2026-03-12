@@ -63,7 +63,7 @@ const levels = [
   { value: "IB HL", label: "IB Higher Level" },
 ];
 
-const STEPS = ["Subject", "Tutor", "Date & Time", "Confirm"];
+const STEPS = ["Subject", "Date & Time", "Confirm"];
 
 export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBooked }: BookSessionDialogProps) {
   const { t } = useTranslation();
