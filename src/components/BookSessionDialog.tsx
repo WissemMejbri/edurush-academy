@@ -254,7 +254,7 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
 
   const canNext = () => {
     switch (step) {
-      case 0: return !!formData.subject && !!formData.level && !!formData.teacher_id;
+      case 0: return !!formData.subject && !!formData.level;
       case 1: return !!formData.date && !!formData.time;
       default: return true;
     }
