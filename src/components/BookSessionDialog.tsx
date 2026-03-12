@@ -128,10 +128,17 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
     fetchSessions();
   }, [formData.teacher_id]);
 
-  // Filter teachers by selected subject
+  // Auto-assign a teacher based on subject (pick first available)
   const filteredTeachers = formData.subject
     ? teachers.filter(t => t.subjects?.some(s => s.toLowerCase() === formData.subject.toLowerCase()))
     : teachers;
+
+  // Auto-assign teacher when subject changes
+  useEffect(() => {
+    if (formData.subject && filteredTeachers.length > 0 && !formData.teacher_id) {
+      setFormData(p => ({ ...p, teacher_id: filteredTeachers[0].user_id }));
+    }
+  }, [formData.subject, filteredTeachers.length]);
 
   // Get available time slots for selected date
   const availableTimeSlots = useMemo(() => {
