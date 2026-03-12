@@ -322,8 +322,8 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
 
             {/* Step 1 is now Date & Time (tutor auto-assigned) */}
 
-            {/* Step 2: Date, Time, Duration */}
-            {step === 2 && (
+            {/* Step 1: Date, Time, Duration */}
+            {step === 1 && (
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
