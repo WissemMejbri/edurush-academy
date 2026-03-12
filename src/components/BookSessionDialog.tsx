@@ -436,6 +436,18 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
                     <span className="font-medium text-foreground">{formData.duration / 60} hour{formData.duration > 60 ? "s" : ""}</span>
                   </div>
                 </div>
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 border border-border">
+                  <input
+                    type="checkbox"
+                    id="record_lesson"
+                    checked={formData.record_lesson}
+                    onChange={e => setFormData(p => ({ ...p, record_lesson: e.target.checked }))}
+                    className="h-4 w-4 rounded border-border text-accent focus:ring-accent"
+                  />
+                  <Label htmlFor="record_lesson" className="text-sm cursor-pointer">
+                    Record this lesson
+                  </Label>
+                </div>
                 <div className="space-y-2">
                   <Label>{t("booking.notes")}</Label>
                   <Textarea
