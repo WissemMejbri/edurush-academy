@@ -63,7 +63,7 @@ const levels = [
   { value: "IB HL", label: "IB Higher Level" },
 ];
 
-const STEPS = ["Subject", "Tutor", "Date & Time", "Confirm"];
+const STEPS = ["Subject", "Date & Time", "Confirm"];
 
 export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBooked }: BookSessionDialogProps) {
   const { t } = useTranslation();
@@ -82,6 +82,7 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
     time: "",
     duration: 60,
     notes: "",
+    record_lesson: false,
   });
 
   useEffect(() => {
@@ -127,10 +128,17 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
     fetchSessions();
   }, [formData.teacher_id]);
 
-  // Filter teachers by selected subject
+  // Auto-assign a teacher based on subject (pick first available)
   const filteredTeachers = formData.subject
     ? teachers.filter(t => t.subjects?.some(s => s.toLowerCase() === formData.subject.toLowerCase()))
     : teachers;
+
+  // Auto-assign teacher when subject changes
+  useEffect(() => {
+    if (formData.subject && filteredTeachers.length > 0 && !formData.teacher_id) {
+      setFormData(p => ({ ...p, teacher_id: filteredTeachers[0].user_id }));
+    }
+  }, [formData.subject, filteredTeachers.length]);
 
   // Get available time slots for selected date
   const availableTimeSlots = useMemo(() => {
@@ -222,7 +230,8 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
         requested_time: formData.time,
         duration_minutes: formData.duration,
         notes: formData.notes || null,
-      }).select().single();
+        record_lesson: formData.record_lesson,
+      } as any).select().single();
 
       if (error) throw error;
 
@@ -235,7 +244,7 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
       toast({ title: t("booking.success"), description: t("booking.successDesc") });
       onOpenChange(false);
       onBooked?.();
-      setFormData({ teacher_id: "", subject: "", level: "", date: undefined, time: "", duration: 60, notes: "" });
+      setFormData({ teacher_id: "", subject: "", level: "", date: undefined, time: "", duration: 60, notes: "", record_lesson: false });
     } catch (err: any) {
       toast({ title: t("booking.error"), description: err.message, variant: "destructive" });
     } finally {
@@ -245,9 +254,8 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
 
   const canNext = () => {
     switch (step) {
-      case 0: return !!formData.subject && !!formData.level;
-      case 1: return !!formData.teacher_id;
-      case 2: return !!formData.date && !!formData.time;
+      case 0: return !!formData.subject && !!formData.level && !!formData.teacher_id;
+      case 1: return !!formData.date && !!formData.time;
       default: return true;
     }
   };
@@ -312,45 +320,10 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
               </div>
             )}
 
-            {/* Step 1: Tutor */}
-            {step === 1 && (
-              <div className="space-y-3">
-                <Label className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-accent" />
-                  {t("booking.selectTutor")}
-                </Label>
-                {filteredTeachers.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center">No tutors available for this subject.</p>
-                ) : (
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {filteredTeachers.map(teacher => (
-                      <button
-                        key={teacher.user_id}
-                        onClick={() => setFormData(p => ({ ...p, teacher_id: teacher.user_id }))}
-                        className={cn(
-                          "w-full p-3 rounded-xl border text-left transition-all",
-                          formData.teacher_id === teacher.user_id
-                            ? "border-accent bg-accent/5 ring-1 ring-accent"
-                            : "border-border hover:border-accent/50 hover:bg-muted/50"
-                        )}
-                      >
-                        <span className="font-medium text-sm text-foreground">
-                          {teacher.full_name || "Unnamed Tutor"}
-                        </span>
-                        {teacher.subjects && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {teacher.subjects.join(", ")}
-                          </p>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Step 1 is now Date & Time (tutor auto-assigned) */}
 
-            {/* Step 2: Date, Time, Duration */}
-            {step === 2 && (
+            {/* Step 1: Date, Time, Duration */}
+            {step === 1 && (
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
@@ -438,8 +411,8 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
               </div>
             )}
 
-            {/* Step 3: Confirm */}
-            {step === 3 && (
+            {/* Step 2: Confirm */}
+            {step === 2 && (
               <div className="space-y-4">
                 <div className="bg-muted/50 rounded-xl p-4 space-y-2">
                   <div className="flex justify-between text-sm">
@@ -462,6 +435,18 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
                     <span className="text-muted-foreground">Duration</span>
                     <span className="font-medium text-foreground">{formData.duration / 60} hour{formData.duration > 60 ? "s" : ""}</span>
                   </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 border border-border">
+                  <input
+                    type="checkbox"
+                    id="record_lesson"
+                    checked={formData.record_lesson}
+                    onChange={e => setFormData(p => ({ ...p, record_lesson: e.target.checked }))}
+                    className="h-4 w-4 rounded border-border text-accent focus:ring-accent"
+                  />
+                  <Label htmlFor="record_lesson" className="text-sm cursor-pointer">
+                    Record this lesson
+                  </Label>
                 </div>
                 <div className="space-y-2">
                   <Label>{t("booking.notes")}</Label>
@@ -487,7 +472,7 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
             <ChevronLeft className="w-4 h-4" />
             {step === 0 ? "Cancel" : "Back"}
           </Button>
-          {step < 3 ? (
+          {step < 2 ? (
             <Button onClick={() => setStep(s => s + 1)} disabled={!canNext()} className="gap-1">
               Next <ChevronRight className="w-4 h-4" />
             </Button>

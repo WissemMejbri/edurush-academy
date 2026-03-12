@@ -23,6 +23,7 @@ export type Database = {
           notes: string | null
           proposed_date: string | null
           proposed_time: string | null
+          record_lesson: boolean
           requested_date: string
           requested_time: string
           status: string
@@ -40,6 +41,7 @@ export type Database = {
           notes?: string | null
           proposed_date?: string | null
           proposed_time?: string | null
+          record_lesson?: boolean
           requested_date: string
           requested_time: string
           status?: string
@@ -57,6 +59,7 @@ export type Database = {
           notes?: string | null
           proposed_date?: string | null
           proposed_time?: string | null
+          record_lesson?: boolean
           requested_date?: string
           requested_time?: string
           status?: string

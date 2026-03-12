@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
     const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: caller.id, _role: "admin" });
     if (!isAdmin) throw new Error("Admin access required");
 
-    const { full_name, email, password } = await req.json();
+    const { full_name, email, password, subjects } = await req.json();
     if (!full_name || !email || !password) throw new Error("Missing required fields");
 
     // Create user with admin API
@@ -38,6 +38,11 @@ Deno.serve(async (req) => {
     });
 
     if (createError) throw createError;
+
+    // Update profile with subjects if provided
+    if (newUser.user && subjects && Array.isArray(subjects) && subjects.length > 0) {
+      await supabase.from("profiles").update({ subjects }).eq("user_id", newUser.user.id);
+    }
 
     return new Response(JSON.stringify({ success: true, user_id: newUser.user?.id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

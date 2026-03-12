@@ -66,7 +66,7 @@ const AdminDashboard = () => {
 
   // Add teacher form
   const [addTeacherOpen, setAddTeacherOpen] = useState(false);
-  const [newTeacher, setNewTeacher] = useState({ fullName: "", email: "", password: "" });
+  const [newTeacher, setNewTeacher] = useState({ fullName: "", email: "", password: "", subjects: "" });
   const [addingTeacher, setAddingTeacher] = useState(false);
 
   // Edit teacher dialog
@@ -133,15 +133,16 @@ const AdminDashboard = () => {
   };
 
   const handleAddTeacher = async () => {
-    if (!newTeacher.fullName || !newTeacher.email || !newTeacher.password) return;
+    if (!newTeacher.fullName || !newTeacher.email || !newTeacher.password || !newTeacher.subjects) return;
     setAddingTeacher(true);
     try {
+      const subjectsArray = newTeacher.subjects.split(",").map(s => s.trim()).filter(Boolean);
       const { error } = await supabase.functions.invoke("admin-create-teacher", {
-        body: { full_name: newTeacher.fullName, email: newTeacher.email, password: newTeacher.password },
+        body: { full_name: newTeacher.fullName, email: newTeacher.email, password: newTeacher.password, subjects: subjectsArray },
       });
       if (error) throw error;
       toast({ title: "Teacher created!", description: `${newTeacher.email} can now log in.` });
-      setNewTeacher({ fullName: "", email: "", password: "" });
+      setNewTeacher({ fullName: "", email: "", password: "", subjects: "" });
       setAddTeacherOpen(false);
       fetchData();
     } catch (err: any) {
@@ -247,7 +248,12 @@ const AdminDashboard = () => {
                 <Label>Password</Label>
                 <Input type="password" value={newTeacher.password} onChange={e => setNewTeacher(p => ({ ...p, password: e.target.value }))} placeholder="Min 6 characters" minLength={6} />
               </div>
-              <Button onClick={handleAddTeacher} disabled={addingTeacher || !newTeacher.fullName || !newTeacher.email || !newTeacher.password} className="w-full">
+              <div className="space-y-2">
+                <Label>Subjects</Label>
+                <Input value={newTeacher.subjects} onChange={e => setNewTeacher(p => ({ ...p, subjects: e.target.value }))} placeholder="Math, Physics, Chemistry (comma-separated)" />
+                <p className="text-xs text-muted-foreground">Separate multiple subjects with commas</p>
+              </div>
+              <Button onClick={handleAddTeacher} disabled={addingTeacher || !newTeacher.fullName || !newTeacher.email || !newTeacher.password || !newTeacher.subjects} className="w-full">
                 {addingTeacher ? "Creating..." : "Create Teacher Account"}
               </Button>
             </div>
