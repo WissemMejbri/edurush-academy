@@ -472,7 +472,7 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
             <ChevronLeft className="w-4 h-4" />
             {step === 0 ? "Cancel" : "Back"}
           </Button>
-          {step < 3 ? (
+          {step < 2 ? (
             <Button onClick={() => setStep(s => s + 1)} disabled={!canNext()} className="gap-1">
               Next <ChevronRight className="w-4 h-4" />
             </Button>

@@ -248,8 +248,14 @@ const AdminDashboard = () => {
                 <Label>Password</Label>
                 <Input type="password" value={newTeacher.password} onChange={e => setNewTeacher(p => ({ ...p, password: e.target.value }))} placeholder="Min 6 characters" minLength={6} />
               </div>
-              <Button onClick={handleAddTeacher} disabled={addingTeacher || !newTeacher.fullName || !newTeacher.email || !newTeacher.password} className="w-full">
+              <div className="space-y-2">
+                <Label>Subjects</Label>
+                <Input value={newTeacher.subjects} onChange={e => setNewTeacher(p => ({ ...p, subjects: e.target.value }))} placeholder="Math, Physics, Chemistry (comma-separated)" />
+                <p className="text-xs text-muted-foreground">Separate multiple subjects with commas</p>
+              </div>
+              <Button onClick={handleAddTeacher} disabled={addingTeacher || !newTeacher.fullName || !newTeacher.email || !newTeacher.password || !newTeacher.subjects} className="w-full">
                 {addingTeacher ? "Creating..." : "Create Teacher Account"}
+              </Button>
               </Button>
             </div>
           </div>
