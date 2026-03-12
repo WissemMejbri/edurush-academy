@@ -82,6 +82,7 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
     time: "",
     duration: 60,
     notes: "",
+    record_lesson: false,
   });
 
   useEffect(() => {
