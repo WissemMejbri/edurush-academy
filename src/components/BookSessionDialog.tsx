@@ -320,42 +320,7 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
               </div>
             )}
 
-            {/* Step 1: Tutor */}
-            {step === 1 && (
-              <div className="space-y-3">
-                <Label className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-accent" />
-                  {t("booking.selectTutor")}
-                </Label>
-                {filteredTeachers.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center">No tutors available for this subject.</p>
-                ) : (
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {filteredTeachers.map(teacher => (
-                      <button
-                        key={teacher.user_id}
-                        onClick={() => setFormData(p => ({ ...p, teacher_id: teacher.user_id }))}
-                        className={cn(
-                          "w-full p-3 rounded-xl border text-left transition-all",
-                          formData.teacher_id === teacher.user_id
-                            ? "border-accent bg-accent/5 ring-1 ring-accent"
-                            : "border-border hover:border-accent/50 hover:bg-muted/50"
-                        )}
-                      >
-                        <span className="font-medium text-sm text-foreground">
-                          {teacher.full_name || "Unnamed Tutor"}
-                        </span>
-                        {teacher.subjects && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {teacher.subjects.join(", ")}
-                          </p>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Step 1 is now Date & Time (tutor auto-assigned) */}
 
             {/* Step 2: Date, Time, Duration */}
             {step === 2 && (
