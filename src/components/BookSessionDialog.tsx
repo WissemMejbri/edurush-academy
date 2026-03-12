@@ -244,7 +244,7 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
       toast({ title: t("booking.success"), description: t("booking.successDesc") });
       onOpenChange(false);
       onBooked?.();
-      setFormData({ teacher_id: "", subject: "", level: "", date: undefined, time: "", duration: 60, notes: "" });
+      setFormData({ teacher_id: "", subject: "", level: "", date: undefined, time: "", duration: 60, notes: "", record_lesson: false });
     } catch (err: any) {
       toast({ title: t("booking.error"), description: err.message, variant: "destructive" });
     } finally {

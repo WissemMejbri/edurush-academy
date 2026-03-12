@@ -142,7 +142,7 @@ const AdminDashboard = () => {
       });
       if (error) throw error;
       toast({ title: "Teacher created!", description: `${newTeacher.email} can now log in.` });
-      setNewTeacher({ fullName: "", email: "", password: "" });
+      setNewTeacher({ fullName: "", email: "", password: "", subjects: "" });
       setAddTeacherOpen(false);
       fetchData();
     } catch (err: any) {
