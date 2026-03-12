@@ -133,7 +133,7 @@ const AdminDashboard = () => {
   };
 
   const handleAddTeacher = async () => {
-    if (!newTeacher.fullName || !newTeacher.email || !newTeacher.password) return;
+    if (!newTeacher.fullName || !newTeacher.email || !newTeacher.password || !newTeacher.subjects) return;
     setAddingTeacher(true);
     try {
       const { error } = await supabase.functions.invoke("admin-create-teacher", {
