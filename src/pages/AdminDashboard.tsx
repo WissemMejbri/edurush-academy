@@ -66,7 +66,7 @@ const AdminDashboard = () => {
 
   // Add teacher form
   const [addTeacherOpen, setAddTeacherOpen] = useState(false);
-  const [newTeacher, setNewTeacher] = useState({ fullName: "", email: "", password: "" });
+  const [newTeacher, setNewTeacher] = useState({ fullName: "", email: "", password: "", subjects: "" });
   const [addingTeacher, setAddingTeacher] = useState(false);
 
   // Edit teacher dialog
