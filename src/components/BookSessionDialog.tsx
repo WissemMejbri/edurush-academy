@@ -367,7 +367,7 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
                             key={slot}
                             onClick={() => setFormData(p => ({ ...p, time: slot, duration: 60 }))}
                             className={cn(
-                              "py-2 px-3 rounded-lg border text-sm font-medium transition-all",
+                              "py-3 px-3 rounded-lg border text-sm font-medium transition-all min-h-[44px]",
                               formData.time === slot
                                 ? "border-accent bg-accent/10 text-accent"
                                 : "border-border hover:border-accent/50 text-foreground"
