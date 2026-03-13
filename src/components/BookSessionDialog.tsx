@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Calendar as CalendarIcon, Clock, BookOpen, User, ChevronRight, ChevronLeft, Timer } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, BookOpen, ChevronRight, ChevronLeft, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -23,12 +23,6 @@ interface Teacher {
   full_name: string | null;
   subjects: string[] | null;
   avatar_url: string | null;
-}
-
-interface AvailabilitySlot {
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
 }
 
 interface BookSessionDialogProps {
@@ -63,157 +57,32 @@ const levels = [
   { value: "IB HL", label: "IB Higher Level" },
 ];
 
-const STEPS = ["Subject", "Date & Time", "Confirm"];
+const timeSlots = Array.from({ length: 13 }, (_, i) => {
+  const h = i + 8; // 08:00 to 20:00
+  return `${String(h).padStart(2, "0")}:00`;
+});
+
+const STEPS = ["Program", "Date & Time", "Notes", "Confirm"];
 
 export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBooked }: BookSessionDialogProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [availability, setAvailability] = useState<AvailabilitySlot[]>([]);
-  const [existingSessions, setExistingSessions] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
-    teacher_id: preselectedTeacher?.user_id || "",
     subject: "",
     level: "",
     date: undefined as Date | undefined,
     time: "",
-    duration: 60,
     notes: "",
-    record_lesson: false,
   });
-
-  useEffect(() => {
-    if (preselectedTeacher) {
-      setFormData(prev => ({ ...prev, teacher_id: preselectedTeacher.user_id }));
-    }
-  }, [preselectedTeacher]);
 
   useEffect(() => {
     if (!open) {
       setStep(0);
-      return;
     }
-    const fetchTeachers = async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, subjects, avatar_url")
-        .not("subjects", "is", null);
-      if (data) setTeachers(data as Teacher[]);
-    };
-    fetchTeachers();
   }, [open]);
-
-  // Fetch availability when teacher is selected
-  useEffect(() => {
-    if (!formData.teacher_id) return;
-    const fetchAvail = async () => {
-      const { data } = await supabase
-        .from("teacher_availability")
-        .select("day_of_week, start_time, end_time")
-        .eq("teacher_id", formData.teacher_id);
-      if (data) setAvailability(data);
-    };
-    const fetchSessions = async () => {
-      const { data } = await supabase
-        .from("booking_sessions")
-        .select("requested_date, requested_time, duration_minutes, status")
-        .eq("teacher_id", formData.teacher_id)
-        .in("status", ["pending", "accepted"]);
-      if (data) setExistingSessions(data);
-    };
-    fetchAvail();
-    fetchSessions();
-  }, [formData.teacher_id]);
-
-  // Auto-assign a teacher based on subject (pick first available)
-  const filteredTeachers = formData.subject
-    ? teachers.filter(t => t.subjects?.some(s => s.toLowerCase() === formData.subject.toLowerCase()))
-    : teachers;
-
-  // Auto-assign teacher when subject changes
-  useEffect(() => {
-    if (formData.subject && filteredTeachers.length > 0) {
-      setFormData(p => ({ ...p, teacher_id: filteredTeachers[0].user_id }));
-    }
-  }, [formData.subject, filteredTeachers.length]);
-
-  // Get available time slots for selected date
-  const availableTimeSlots = useMemo(() => {
-    if (!formData.date || availability.length === 0) return [];
-    const dayOfWeek = formData.date.getDay();
-    const daySlots = availability.filter(a => a.day_of_week === dayOfWeek);
-    if (daySlots.length === 0) return [];
-
-    const dateStr = format(formData.date, "yyyy-MM-dd");
-    const bookedSlots = existingSessions.filter(s => s.requested_date === dateStr);
-
-    const slots: string[] = [];
-    for (const slot of daySlots) {
-      const [startH] = slot.start_time.split(":").map(Number);
-      const [endH] = slot.end_time.split(":").map(Number);
-      for (let h = startH; h < endH; h++) {
-        const timeStr = `${String(h).padStart(2, "0")}:00`;
-        slots.push(timeStr);
-      }
-    }
-
-    // Remove already booked times
-    return slots.filter(time => {
-      const [h] = time.split(":").map(Number);
-      return !bookedSlots.some(b => {
-        const [bh] = b.requested_time.split(":").map(Number);
-        const bEnd = bh + b.duration_minutes / 60;
-        return h >= bh && h < bEnd;
-      });
-    });
-  }, [formData.date, availability, existingSessions]);
-
-  // Max duration based on availability
-  const maxDuration = useMemo(() => {
-    if (!formData.time || !formData.date) return 1;
-    const [startH] = formData.time.split(":").map(Number);
-    const dayOfWeek = formData.date.getDay();
-    const daySlots = availability.filter(a => a.day_of_week === dayOfWeek);
-
-    let maxEnd = startH + 1;
-    for (const slot of daySlots) {
-      const [endH] = slot.end_time.split(":").map(Number);
-      if (startH >= Number(slot.start_time.split(":")[0]) && startH < endH) {
-        maxEnd = Math.max(maxEnd, endH);
-      }
-    }
-
-    // Check for booked sessions that would block
-    const dateStr = format(formData.date, "yyyy-MM-dd");
-    const bookedAfter = existingSessions
-      .filter(s => s.requested_date === dateStr)
-      .map(s => Number(s.requested_time.split(":")[0]))
-      .filter(h => h > startH)
-      .sort((a, b) => a - b);
-
-    if (bookedAfter.length > 0) {
-      maxEnd = Math.min(maxEnd, bookedAfter[0]);
-    }
-
-    return Math.max(1, maxEnd - startH);
-  }, [formData.time, formData.date, availability, existingSessions]);
-
-  const durationOptions = Array.from({ length: Math.min(maxDuration, 4) }, (_, i) => i + 1);
-
-  const isDateAvailable = (date: Date) => {
-    const day = date.getDay();
-    return availability.some(a => a.day_of_week === day) && date >= new Date(new Date().setHours(0, 0, 0, 0));
-  };
-
-  const endTime = () => {
-    if (!formData.time) return "";
-    const [h, m] = formData.time.split(":").map(Number);
-    const end = h + formData.duration / 60;
-    return `${String(Math.floor(end)).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-  };
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -221,30 +90,36 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Insert as application request with status "pending" and a placeholder teacher_id
       const { error, data } = await supabase.from("booking_sessions").insert({
         student_id: user.id,
-        teacher_id: formData.teacher_id,
+        teacher_id: user.id, // placeholder — admin will assign a real tutor later
         subject: formData.subject,
         level: formData.level,
         requested_date: format(formData.date!, "yyyy-MM-dd"),
         requested_time: formData.time,
-        duration_minutes: formData.duration,
+        duration_minutes: 60,
         notes: formData.notes || null,
-        record_lesson: formData.record_lesson,
+        record_lesson: false,
+        status: "pending",
       } as any).select().single();
 
       if (error) throw error;
 
+      // Send confirmation email via edge function
       if (data) {
         supabase.functions.invoke("booking-notifications", {
-          body: { session_id: data.id, event_type: "booked" },
+          body: { session_id: data.id, event_type: "application_received" },
         }).catch(console.error);
       }
 
-      toast({ title: t("booking.success"), description: t("booking.successDesc") });
+      toast({
+        title: "Application Submitted!",
+        description: "Your tutoring request has been received. Our team will review it shortly.",
+      });
       onOpenChange(false);
       onBooked?.();
-      setFormData({ teacher_id: "", subject: "", level: "", date: undefined, time: "", duration: 60, notes: "", record_lesson: false });
+      setFormData({ subject: "", level: "", date: undefined, time: "", notes: "" });
     } catch (err: any) {
       toast({ title: t("booking.error"), description: err.message, variant: "destructive" });
     } finally {
@@ -256,11 +131,10 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
     switch (step) {
       case 0: return !!formData.subject && !!formData.level;
       case 1: return !!formData.date && !!formData.time;
+      case 2: return true; // notes are optional
       default: return true;
     }
   };
-
-  const selectedTeacher = teachers.find(t => t.user_id === formData.teacher_id);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -301,7 +175,7 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
                     <BookOpen className="w-4 h-4 text-accent" />
                     {t("booking.subject")}
                   </Label>
-                  <Select value={formData.subject} onValueChange={v => setFormData(p => ({ ...p, subject: v, teacher_id: "" }))}>
+                  <Select value={formData.subject} onValueChange={v => setFormData(p => ({ ...p, subject: v }))}>
                     <SelectTrigger><SelectValue placeholder={t("booking.chooseSubject")} /></SelectTrigger>
                     <SelectContent>
                       {subjects.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
@@ -320,15 +194,13 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
               </div>
             )}
 
-            {/* Step 1 is now Date & Time (tutor auto-assigned) */}
-
-            {/* Step 1: Date, Time, Duration */}
+            {/* Step 1: Preferred Date & Time (no availability restriction) */}
             {step === 1 && (
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <CalendarIcon className="w-4 h-4 text-accent" />
-                    {t("booking.date")}
+                    Preferred Date
                   </Label>
                   <Popover>
                     <PopoverTrigger asChild>
@@ -341,121 +213,90 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
                       <Calendar
                         mode="single"
                         selected={formData.date}
-                        onSelect={d => setFormData(p => ({ ...p, date: d, time: "" }))}
-                        disabled={d => !isDateAvailable(d)}
+                        onSelect={d => setFormData(p => ({ ...p, date: d }))}
+                        disabled={d => d < new Date(new Date().setHours(0, 0, 0, 0))}
                         className="p-3 pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>
-                  {availability.length === 0 && (
-                    <p className="text-xs text-amber-600">This tutor hasn't set their availability yet.</p>
-                  )}
                 </div>
 
-                {formData.date && (
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-accent" />
-                      Start Time
-                    </Label>
-                    {availableTimeSlots.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No available slots on this date.</p>
-                    ) : (
-                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                        {availableTimeSlots.map(slot => (
-                          <button
-                            key={slot}
-                            onClick={() => setFormData(p => ({ ...p, time: slot, duration: 60 }))}
-                            className={cn(
-                              "py-3 px-3 rounded-lg border text-sm font-medium transition-all min-h-[44px]",
-                              formData.time === slot
-                                ? "border-accent bg-accent/10 text-accent"
-                                : "border-border hover:border-accent/50 text-foreground"
-                            )}
-                          >
-                            {slot}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-accent" />
+                    Preferred Time
+                  </Label>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {timeSlots.map(slot => (
+                      <button
+                        key={slot}
+                        onClick={() => setFormData(p => ({ ...p, time: slot }))}
+                        className={cn(
+                          "py-3 px-3 rounded-lg border text-sm font-medium transition-all min-h-[44px]",
+                          formData.time === slot
+                            ? "border-accent bg-accent/10 text-accent"
+                            : "border-border hover:border-accent/50 text-foreground"
+                        )}
+                      >
+                        {slot}
+                      </button>
+                    ))}
                   </div>
-                )}
-
-                {formData.time && (
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Timer className="w-4 h-4 text-accent" />
-                      Duration
-                    </Label>
-                    <div className="flex gap-2">
-                      {durationOptions.map(h => (
-                        <button
-                          key={h}
-                          onClick={() => setFormData(p => ({ ...p, duration: h * 60 }))}
-                          className={cn(
-                            "flex-1 py-2 rounded-lg border text-sm font-medium transition-all",
-                            formData.duration === h * 60
-                              ? "border-accent bg-accent/10 text-accent"
-                              : "border-border hover:border-accent/50 text-foreground"
-                          )}
-                        >
-                          {h}h
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {formData.time} → {endTime()} ({formData.duration / 60} hour{formData.duration > 60 ? "s" : ""})
-                    </p>
-                  </div>
-                )}
+                  <p className="text-xs text-muted-foreground">
+                    This is your preferred time. Final scheduling will be confirmed by our team.
+                  </p>
+                </div>
               </div>
             )}
 
-            {/* Step 2: Confirm */}
+            {/* Step 2: Notes */}
             {step === 2 && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-accent" />
+                    Additional Notes (optional)
+                  </Label>
+                  <Textarea
+                    placeholder="Any specific topics, goals, or preferences you'd like us to know..."
+                    value={formData.notes}
+                    onChange={e => setFormData(p => ({ ...p, notes: e.target.value }))}
+                    rows={5}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Share any details that will help us match you with the right tutor.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Confirm */}
+            {step === 3 && (
               <div className="space-y-4">
                 <div className="bg-muted/50 rounded-xl p-4 space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subject</span>
+                    <span className="text-muted-foreground">Program</span>
                     <span className="font-medium text-foreground">{formData.subject} — {formData.level}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tutor</span>
-                    <span className="font-medium text-foreground">{selectedTeacher?.full_name || "—"}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Date</span>
+                    <span className="text-muted-foreground">Preferred Date</span>
                     <span className="font-medium text-foreground">{formData.date ? format(formData.date, "PPP") : "—"}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Time</span>
-                    <span className="font-medium text-foreground">{formData.time} → {endTime()}</span>
+                    <span className="text-muted-foreground">Preferred Time</span>
+                    <span className="font-medium text-foreground">{formData.time}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Duration</span>
-                    <span className="font-medium text-foreground">{formData.duration / 60} hour{formData.duration > 60 ? "s" : ""}</span>
-                  </div>
+                  {formData.notes && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Notes</span>
+                      <span className="font-medium text-foreground text-right max-w-[60%]">{formData.notes}</span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 border border-border">
-                  <input
-                    type="checkbox"
-                    id="record_lesson"
-                    checked={formData.record_lesson}
-                    onChange={e => setFormData(p => ({ ...p, record_lesson: e.target.checked }))}
-                    className="h-4 w-4 rounded border-border text-accent focus:ring-accent"
-                  />
-                  <Label htmlFor="record_lesson" className="text-sm cursor-pointer">
-                    Record this lesson
-                  </Label>
-                </div>
-                <div className="space-y-2">
-                  <Label>{t("booking.notes")}</Label>
-                  <Textarea
-                    placeholder={t("booking.notesPlaceholder")}
-                    value={formData.notes}
-                    onChange={e => setFormData(p => ({ ...p, notes: e.target.value }))}
-                    rows={3}
-                  />
+                <div className="bg-accent/5 border border-accent/20 rounded-xl p-4">
+                  <p className="text-sm text-foreground">
+                    By submitting, you are requesting a tutoring session. Our team will review your application and assign a tutor. You will receive a confirmation email shortly.
+                  </p>
                 </div>
               </div>
             )}
@@ -472,13 +313,13 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
             <ChevronLeft className="w-4 h-4" />
             {step === 0 ? "Cancel" : "Back"}
           </Button>
-          {step < 2 ? (
+          {step < 3 ? (
             <Button onClick={() => setStep(s => s + 1)} disabled={!canNext()} className="gap-1">
               Next <ChevronRight className="w-4 h-4" />
             </Button>
           ) : (
             <Button onClick={handleSubmit} disabled={loading}>
-              {loading ? "Booking..." : t("booking.submit")}
+              {loading ? "Submitting..." : "Submit Application"}
             </Button>
           )}
         </div>

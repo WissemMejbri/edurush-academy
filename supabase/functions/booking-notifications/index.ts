@@ -4,12 +4,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 interface NotificationPayload {
   session_id: string;
-  event_type: "booked" | "accepted" | "declined" | "cancelled";
+  event_type: "booked" | "application_received" | "accepted" | "declined" | "cancelled" | "tutor_assigned" | "scheduled";
   zoom_link?: string;
 }
 
@@ -32,16 +32,16 @@ serve(async (req) => {
     }
 
     const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
-    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(
+    const { data: claimsData, error: claimsError } = await anonClient.auth.getUser(
       authHeader.replace("Bearer ", "")
     );
-    if (claimsError || !claimsData?.claims) {
+    if (claimsError || !claimsData?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const callerId = claimsData.claims.sub as string;
+    const callerId = claimsData.user.id;
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -76,81 +76,89 @@ serve(async (req) => {
       .eq("user_id", session.student_id)
       .single();
 
-    // Fetch teacher profile
-    const { data: teacherProfile } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("user_id", session.teacher_id)
-      .single();
-
     // Fetch student email from auth
     const { data: studentAuth } = await supabase.auth.admin.getUserById(
       session.student_id
     );
-    const { data: teacherAuth } = await supabase.auth.admin.getUserById(
-      session.teacher_id
-    );
 
     const studentName = studentProfile?.full_name || "Student";
-    const teacherName = teacherProfile?.full_name || "Tutor";
     const studentEmail = studentAuth?.user?.email;
-    const teacherEmail = teacherAuth?.user?.email;
 
     const dateFormatted = new Date(session.requested_date).toLocaleDateString(
       "en-US",
-      {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      }
+      { weekday: "long", year: "numeric", month: "long", day: "numeric" }
     );
 
-    const notifications: Array<{ to: string; subject: string; body: string }> =
-      [];
+    const notifications: Array<{ to: string; subject: string; body: string }> = [];
 
     switch (event_type) {
-      case "booked":
-        // Notify teacher about new booking request
-        if (teacherEmail) {
-          notifications.push({
-            to: teacherEmail,
-            subject: `New Session Request - ${session.subject}`,
-            body: buildEmail({
-              heading: "New Session Request",
-              message: `${studentName} has requested a tutoring session with you.`,
-              details: [
-                { label: "Subject", value: session.subject },
-                { label: "Level", value: session.level },
-                { label: "Date", value: dateFormatted },
-                { label: "Time", value: session.requested_time },
-              ],
-              notes: session.notes,
-              footer:
-                "Log in to your EduRush Academy dashboard to accept or decline this request.",
-            }),
-          });
-        }
-        // Confirm to student
+      case "application_received":
+        // Confirmation email to student
         if (studentEmail) {
           notifications.push({
             to: studentEmail,
-            subject: `Session Requested - ${session.subject}`,
+            subject: "EduRush Tutoring Request Received",
             body: buildEmail({
-              heading: "Session Request Sent",
-              message: `Your tutoring session request with ${teacherName} has been submitted.`,
+              heading: "Tutoring Request Received",
+              message: `Thank you for applying for tutoring with EduRush Academy.\n\nWe have received your request and our team will review it shortly. You will receive a confirmation once a tutor has been assigned.`,
               details: [
-                { label: "Tutor", value: teacherName },
-                { label: "Subject", value: session.subject },
-                { label: "Level", value: session.level },
-                { label: "Date", value: dateFormatted },
-                { label: "Time", value: session.requested_time },
+                { label: "Program Requested", value: `${session.subject} — ${session.level}` },
+                { label: "Preferred Date", value: dateFormatted },
+                { label: "Preferred Time", value: session.requested_time },
               ],
               notes: session.notes,
-              footer:
-                "You will receive an email once the tutor responds to your request.",
+              footer: "Our team will be in touch soon. Thank you for choosing EduRush Academy!",
             }),
           });
+        }
+        break;
+
+      case "booked":
+        // Legacy support — notify teacher about new booking request
+        {
+          const { data: teacherProfile } = await supabase
+            .from("profiles").select("full_name").eq("user_id", session.teacher_id).single();
+          const { data: teacherAuth } = await supabase.auth.admin.getUserById(session.teacher_id);
+          const teacherName = teacherProfile?.full_name || "Tutor";
+          const teacherEmail = teacherAuth?.user?.email;
+
+          if (teacherEmail) {
+            notifications.push({
+              to: teacherEmail,
+              subject: `New Session Request - ${session.subject}`,
+              body: buildEmail({
+                heading: "New Session Request",
+                message: `${studentName} has requested a tutoring session with you.`,
+                details: [
+                  { label: "Subject", value: session.subject },
+                  { label: "Level", value: session.level },
+                  { label: "Date", value: dateFormatted },
+                  { label: "Time", value: session.requested_time },
+                ],
+                notes: session.notes,
+                footer: "Log in to your EduRush Academy dashboard to accept or decline this request.",
+              }),
+            });
+          }
+          if (studentEmail) {
+            notifications.push({
+              to: studentEmail,
+              subject: `Session Requested - ${session.subject}`,
+              body: buildEmail({
+                heading: "Session Request Sent",
+                message: `Your tutoring session request with ${teacherName} has been submitted.`,
+                details: [
+                  { label: "Tutor", value: teacherName },
+                  { label: "Subject", value: session.subject },
+                  { label: "Level", value: session.level },
+                  { label: "Date", value: dateFormatted },
+                  { label: "Time", value: session.requested_time },
+                ],
+                notes: session.notes,
+                footer: "You will receive an email once the tutor responds to your request.",
+              }),
+            });
+          }
         }
         break;
 
@@ -161,16 +169,13 @@ serve(async (req) => {
             subject: `Session Confirmed! - ${session.subject}`,
             body: buildEmail({
               heading: "Session Confirmed! 🎉",
-              message: `Great news! ${teacherName} has accepted your tutoring session.`,
+              message: `Great news! Your tutoring session has been confirmed.`,
               details: [
-                { label: "Tutor", value: teacherName },
                 { label: "Subject", value: session.subject },
                 { label: "Level", value: session.level },
                 { label: "Date", value: dateFormatted },
                 { label: "Time", value: session.requested_time },
-                ...(zoom_link
-                  ? [{ label: "Meeting Link", value: zoom_link }]
-                  : []),
+                ...(zoom_link ? [{ label: "Meeting Link", value: zoom_link }] : []),
               ],
               footer: "We look forward to your session. Good luck!",
             }),
@@ -178,76 +183,69 @@ serve(async (req) => {
         }
         break;
 
-      case "declined":
+      case "tutor_assigned":
         if (studentEmail) {
           notifications.push({
             to: studentEmail,
-            subject: `Session Update - ${session.subject}`,
+            subject: `Tutor Assigned - ${session.subject}`,
             body: buildEmail({
-              heading: "Session Not Available",
-              message: `Unfortunately, ${teacherName} is unable to accommodate your session request at this time.`,
+              heading: "A Tutor Has Been Assigned",
+              message: `We've assigned a tutor to your ${session.subject} request. You will receive scheduling details soon.`,
               details: [
                 { label: "Subject", value: session.subject },
-                { label: "Date", value: dateFormatted },
-                { label: "Time", value: session.requested_time },
+                { label: "Level", value: session.level },
+                { label: "Preferred Date", value: dateFormatted },
+                { label: "Preferred Time", value: session.requested_time },
               ],
-              footer:
-                "You can try booking a different time slot or another tutor from your dashboard.",
+              footer: "Our team will confirm the final session schedule shortly.",
             }),
           });
         }
         break;
 
+      case "declined":
+      case "scheduled":
       case "cancelled":
-        // Notify both parties
-        const cancelRecipients = [
-          studentEmail
-            ? { email: studentEmail, name: studentName, isStudent: true }
-            : null,
-          teacherEmail
-            ? { email: teacherEmail, name: teacherName, isStudent: false }
-            : null,
-        ].filter(Boolean);
-
-        for (const r of cancelRecipients) {
-          if (!r) continue;
+        // Keep existing behavior for these
+        if (studentEmail) {
+          const headings: Record<string, string> = {
+            declined: "Request Not Approved",
+            scheduled: "Session Scheduled",
+            cancelled: "Session Cancelled",
+          };
+          const messages: Record<string, string> = {
+            declined: "Unfortunately, we are unable to accommodate your tutoring request at this time.",
+            scheduled: `Your tutoring session for ${session.subject} has been scheduled.`,
+            cancelled: `Your tutoring session for ${session.subject} has been cancelled.`,
+          };
           notifications.push({
-            to: r.email,
-            subject: `Session Cancelled - ${session.subject}`,
+            to: studentEmail,
+            subject: `${headings[event_type]} - ${session.subject}`,
             body: buildEmail({
-              heading: "Session Cancelled",
-              message: `A tutoring session for ${session.subject} on ${dateFormatted} at ${session.requested_time} has been cancelled.`,
+              heading: headings[event_type],
+              message: messages[event_type],
               details: [
                 { label: "Subject", value: session.subject },
                 { label: "Date", value: dateFormatted },
                 { label: "Time", value: session.requested_time },
               ],
-              footer: r.isStudent
-                ? "You can book a new session from your dashboard."
-                : "The time slot is now available for other bookings.",
+              footer: event_type === "declined"
+                ? "You can submit a new request from your dashboard."
+                : "Check your dashboard for more details.",
             }),
           });
         }
         break;
     }
 
-    // Log notifications (actual email sending would go through a provider)
-    console.log(
-      `Sending ${notifications.length} notification(s) for event: ${event_type}`
-    );
+    console.log(`Sending ${notifications.length} notification(s) for event: ${event_type}`);
     for (const n of notifications) {
       console.log(`→ To: ${n.to} | Subject: ${n.subject}`);
     }
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        notifications_sent: notifications.length,
-        event_type,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ success: true, notifications_sent: notifications.length, event_type }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Unknown error";
@@ -286,7 +284,7 @@ function buildEmail(opts: {
 </td></tr>
 <tr><td style="padding:40px">
 <h2 style="color:#1a2744;font-size:22px;margin:0 0 16px">${opts.heading}</h2>
-<p style="color:#4a5568;font-size:15px;line-height:1.6;margin:0 0 24px">${opts.message}</p>
+<p style="color:#4a5568;font-size:15px;line-height:1.6;margin:0 0 24px">${opts.message.replace(/\n/g, "<br>")}</p>
 <table width="100%" style="border-radius:12px;overflow:hidden;border:1px solid #eef1f6;margin-bottom:24px" cellpadding="0" cellspacing="0">
 ${rows}
 </table>
