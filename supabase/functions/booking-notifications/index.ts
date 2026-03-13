@@ -21,6 +21,28 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Authenticate the caller
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
+    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(
+      authHeader.replace("Bearer ", "")
+    );
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const callerId = claimsData.claims.sub as string;
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { session_id, event_type, zoom_link } =
@@ -35,6 +57,16 @@ serve(async (req) => {
 
     if (sessionError || !session) {
       throw new Error("Session not found");
+    }
+
+    // Verify caller is a participant or admin
+    const isParticipant = callerId === session.student_id || callerId === session.teacher_id;
+    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: callerId, _role: "admin" });
+    if (!isParticipant && !isAdmin) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Fetch student profile
