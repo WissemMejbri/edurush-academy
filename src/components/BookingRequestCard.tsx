@@ -152,73 +152,72 @@ export function BookingRequestCard({ session, onStatusChange, variant = "teacher
   return (
     <>
       <div className="bg-card rounded-xl border border-border p-4 premium-shadow-sm">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 space-y-2">
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-accent" />
-              <span className="font-semibold text-foreground">{session.subject} — {session.level}</span>
+        <div className="space-y-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <BookOpen className="w-4 h-4 text-accent flex-shrink-0" />
+              <span className="font-semibold text-foreground truncate">{session.subject} — {session.level}</span>
             </div>
-
-            {variant === "teacher" && session.student_name && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <User className="w-4 h-4" />
-                <span>{session.student_name}</span>
-              </div>
-            )}
-
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
-                {formatDate(session.requested_date)}
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                {session.requested_time} – {endTime(session.requested_time, session.duration_minutes)}
-              </span>
-              <span className="text-xs">{session.duration_minutes / 60}h</span>
-            </div>
-
-            {session.notes && (
-              <p className="text-sm text-muted-foreground italic">"{session.notes}"</p>
-            )}
-
-            {session.proposed_date && (
-              <p className="text-xs text-accent font-medium">
-                📅 Proposed: {formatDate(session.proposed_date)} at {session.proposed_time}
-              </p>
-            )}
-
-            {session.status === "accepted" && session.zoom_link && (
-              <a href={session.zoom_link} target="_blank" rel="noopener noreferrer"
-                className="text-sm text-accent hover:underline">
-                🔗 Join Session
-              </a>
-            )}
+            <StatusBadge status={session.status} />
           </div>
 
-          <div className="flex flex-col items-end gap-2">
-            <StatusBadge status={session.status} />
+          {variant === "teacher" && session.student_name && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <User className="w-4 h-4 flex-shrink-0" />
+              <span>{session.student_name}</span>
+            </div>
+          )}
 
-            {variant === "teacher" && session.status === "pending" && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                <Button size="sm" onClick={() => setShowAcceptDialog(true)} disabled={loading} className="gap-1">
-                  <Check className="w-4 h-4" /> Accept
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setShowProposeDialog(true)} disabled={loading} className="gap-1">
-                  <MessageSquare className="w-4 h-4" /> Propose
-                </Button>
-                <Button size="sm" variant="outline" onClick={handleDecline} disabled={loading} className="gap-1 text-destructive">
-                  <X className="w-4 h-4" /> Decline
-                </Button>
-              </div>
-            )}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Calendar className="w-4 h-4 flex-shrink-0" />
+              {formatDate(session.requested_date)}
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="w-4 h-4 flex-shrink-0" />
+              {session.requested_time} – {endTime(session.requested_time, session.duration_minutes)}
+            </span>
+            <span className="text-xs">{session.duration_minutes / 60}h</span>
+          </div>
 
-            {variant === "student" && session.status === "pending" && (
-              <Button size="sm" variant="outline" onClick={handleCancel} disabled={loading}>
+          {session.notes && (
+            <p className="text-sm text-muted-foreground italic break-words">"{session.notes}"</p>
+          )}
+
+          {session.proposed_date && (
+            <p className="text-xs text-accent font-medium">
+              📅 Proposed: {formatDate(session.proposed_date)} at {session.proposed_time}
+            </p>
+          )}
+
+          {session.status === "accepted" && session.zoom_link && (
+            <a href={session.zoom_link} target="_blank" rel="noopener noreferrer"
+              className="text-sm text-accent hover:underline">
+              🔗 Join Session
+            </a>
+          )}
+
+          {variant === "teacher" && session.status === "pending" && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              <Button size="sm" onClick={() => setShowAcceptDialog(true)} disabled={loading} className="gap-1 min-h-[40px]">
+                <Check className="w-4 h-4" /> Accept
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setShowProposeDialog(true)} disabled={loading} className="gap-1 min-h-[40px]">
+                <MessageSquare className="w-4 h-4" /> Propose
+              </Button>
+              <Button size="sm" variant="outline" onClick={handleDecline} disabled={loading} className="gap-1 text-destructive min-h-[40px]">
+                <X className="w-4 h-4" /> Decline
+              </Button>
+            </div>
+          )}
+
+          {variant === "student" && session.status === "pending" && (
+            <div className="pt-1">
+              <Button size="sm" variant="outline" onClick={handleCancel} disabled={loading} className="min-h-[40px]">
                 {t("booking.cancel")}
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 

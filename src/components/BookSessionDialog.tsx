@@ -264,7 +264,7 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[100dvh] sm:max-h-[90vh] h-full sm:h-auto overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="font-display text-xl">{t("booking.title")}</DialogTitle>
           <DialogDescription>{t("booking.description")}</DialogDescription>
@@ -361,13 +361,13 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
                     {availableTimeSlots.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No available slots on this date.</p>
                     ) : (
-                      <div className="grid grid-cols-4 gap-2">
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                         {availableTimeSlots.map(slot => (
                           <button
                             key={slot}
                             onClick={() => setFormData(p => ({ ...p, time: slot, duration: 60 }))}
                             className={cn(
-                              "py-2 px-3 rounded-lg border text-sm font-medium transition-all",
+                              "py-3 px-3 rounded-lg border text-sm font-medium transition-all min-h-[44px]",
                               formData.time === slot
                                 ? "border-accent bg-accent/10 text-accent"
                                 : "border-border hover:border-accent/50 text-foreground"
@@ -463,7 +463,7 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
         </AnimatePresence>
 
         {/* Navigation buttons */}
-        <div className="flex justify-between mt-4">
+        <div className="flex justify-between mt-4 pb-2 sm:pb-0">
           <Button
             variant="outline"
             onClick={() => step > 0 ? setStep(s => s - 1) : onOpenChange(false)}
