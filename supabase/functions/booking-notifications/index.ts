@@ -59,6 +59,16 @@ serve(async (req) => {
       throw new Error("Session not found");
     }
 
+    // Verify caller is a participant or admin
+    const isParticipant = callerId === session.student_id || callerId === session.teacher_id;
+    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: callerId, _role: "admin" });
+    if (!isParticipant && !isAdmin) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Fetch student profile
     const { data: studentProfile } = await supabase
       .from("profiles")
