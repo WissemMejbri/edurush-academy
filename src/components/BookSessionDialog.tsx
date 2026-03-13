@@ -361,7 +361,7 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
                     {availableTimeSlots.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No available slots on this date.</p>
                     ) : (
-                      <div className="grid grid-cols-4 gap-2">
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                         {availableTimeSlots.map(slot => (
                           <button
                             key={slot}
