@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Users, GraduationCap, BookOpen, Calendar, BarChart3,
-  Settings, LogOut, Home, UserCog, UserPlus, Menu, Trash2
+  Settings, LogOut, Home, UserCog, UserPlus, Menu, ClipboardList
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,7 @@ interface UserWithRole {
   id: string;
   user_id: string;
   full_name: string | null;
+  email?: string;
   role: string;
   created_at: string;
 }
@@ -41,16 +42,28 @@ interface BookingSession {
   requested_date: string;
   requested_time: string;
   status: string;
+  notes: string | null;
+  created_at: string;
   student_name?: string;
+  student_email?: string;
   teacher_name?: string;
 }
 
 const sidebarItems = [
   { key: "overview", icon: BarChart3, label: "Overview" },
+  { key: "tutoringRequests", icon: ClipboardList, label: "Tutoring Requests" },
   { key: "manageUsers", icon: Users, label: "Manage Users" },
   { key: "addTeacher", icon: UserPlus, label: "Add Teacher" },
   { key: "manageSessions", icon: Calendar, label: "Manage Sessions" },
   { key: "settings", icon: Settings, label: "Settings" },
+];
+
+const requestStatuses = [
+  { value: "pending", label: "Pending" },
+  { value: "tutor_assigned", label: "Tutor Assigned" },
+  { value: "scheduled", label: "Scheduled" },
+  { value: "completed", label: "Completed" },
+  { value: "rejected", label: "Rejected" },
 ];
 
 const AdminDashboard = () => {
@@ -63,6 +76,7 @@ const AdminDashboard = () => {
   const [sessions, setSessions] = useState<BookingSession[]>([]);
   const [stats, setStats] = useState({ students: 0, teachers: 0, sessions: 0, pending: 0 });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [teachers, setTeachers] = useState<{ user_id: string; full_name: string }[]>([]);
 
   // Add teacher form
   const [addTeacherOpen, setAddTeacherOpen] = useState(false);
@@ -99,6 +113,16 @@ const AdminDashboard = () => {
         created_at: profileMap.get(r.user_id)?.created_at || "",
       }));
       setUsers(usersWithRoles);
+
+      // Build teachers list
+      const teacherList = rolesData
+        .filter(r => r.role === "teacher")
+        .map(r => ({
+          user_id: r.user_id,
+          full_name: profileMap.get(r.user_id)?.full_name || "Unknown",
+        }));
+      setTeachers(teacherList);
+
       setStats(prev => ({
         ...prev,
         students: rolesData.filter(r => r.role === "student").length,
@@ -109,7 +133,7 @@ const AdminDashboard = () => {
     const { data: sessionsData } = await supabase
       .from("booking_sessions")
       .select("*")
-      .order("requested_date", { ascending: false });
+      .order("created_at", { ascending: false });
 
     if (sessionsData) {
       const userIds = [...new Set([...sessionsData.map(s => s.student_id), ...sessionsData.map(s => s.teacher_id)])];
@@ -118,7 +142,7 @@ const AdminDashboard = () => {
       setSessions(sessionsData.map(s => ({
         ...s,
         student_name: nameMap.get(s.student_id) || "Unknown",
-        teacher_name: nameMap.get(s.teacher_id) || "Unknown",
+        teacher_name: nameMap.get(s.teacher_id) || "Unassigned",
       })));
       setStats(prev => ({ ...prev, sessions: sessionsData.length, pending: sessionsData.filter(s => s.status === "pending").length }));
     }
@@ -130,6 +154,47 @@ const AdminDashboard = () => {
     const { error } = await supabase.from("user_roles").update({ role: newRole as any }).eq("user_id", userId);
     if (error) toast({ title: "Failed to update role", variant: "destructive" });
     else { toast({ title: "Role updated" }); fetchData(); }
+  };
+
+  const handleStatusChange = async (sessionId: string, newStatus: string) => {
+    const { error } = await supabase
+      .from("booking_sessions")
+      .update({ status: newStatus } as any)
+      .eq("id", sessionId);
+    if (error) {
+      toast({ title: "Failed to update status", variant: "destructive" });
+    } else {
+      toast({ title: "Status updated" });
+
+      // Send notification for status changes
+      const session = sessions.find(s => s.id === sessionId);
+      if (session && (newStatus === "tutor_assigned" || newStatus === "scheduled" || newStatus === "declined")) {
+        supabase.functions.invoke("booking-notifications", {
+          body: {
+            session_id: sessionId,
+            event_type: newStatus === "declined" ? "declined" : newStatus,
+          },
+        }).catch(console.error);
+      }
+
+      fetchData();
+    }
+  };
+
+  const handleAssignTeacher = async (sessionId: string, teacherId: string) => {
+    const { error } = await supabase
+      .from("booking_sessions")
+      .update({ teacher_id: teacherId, status: "tutor_assigned" } as any)
+      .eq("id", sessionId);
+    if (error) {
+      toast({ title: "Failed to assign tutor", variant: "destructive" });
+    } else {
+      toast({ title: "Tutor assigned" });
+      supabase.functions.invoke("booking-notifications", {
+        body: { session_id: sessionId, event_type: "tutor_assigned" },
+      }).catch(console.error);
+      fetchData();
+    }
   };
 
   const handleAddTeacher = async () => {
@@ -166,15 +231,93 @@ const AdminDashboard = () => {
 
   if (!user) return null;
 
-  const statusColors: Record<string, string> = {
-    pending: "bg-yellow-500/10 text-yellow-600",
-    accepted: "bg-green-500/10 text-green-600",
-    declined: "bg-red-500/10 text-red-600",
-    completed: "bg-blue-500/10 text-blue-600",
-  };
-
   const renderContent = () => {
     switch (activeTab) {
+      case "tutoringRequests":
+        return (
+          <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
+            <h3 className="font-display text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+              <ClipboardList className="w-5 h-5" /> Tutoring Requests / Program Applications
+            </h3>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Student</TableHead>
+                    <TableHead>Program</TableHead>
+                    <TableHead>Preferred Date & Time</TableHead>
+                    <TableHead>Submitted</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Assign Tutor</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sessions.map((s) => (
+                    <TableRow key={s.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium text-foreground">{s.student_name}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <p className="font-medium text-foreground">{s.subject}</p>
+                        <p className="text-xs text-muted-foreground">{s.level}</p>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(s.requested_date).toLocaleDateString()} at {s.requested_time}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
+                        {new Date(s.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={s.status} />
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={s.teacher_id === s.student_id ? "" : s.teacher_id}
+                          onValueChange={(v) => handleAssignTeacher(s.id, v)}
+                        >
+                          <SelectTrigger className="w-36">
+                            <SelectValue placeholder="Assign tutor..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {teachers.map(t => (
+                              <SelectItem key={t.user_id} value={t.user_id}>{t.full_name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={s.status}
+                          onValueChange={(v) => handleStatusChange(s.id, v)}
+                        >
+                          <SelectTrigger className="w-36">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {requestStatuses.map(st => (
+                              <SelectItem key={st.value} value={st.value}>{st.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {sessions.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        No tutoring requests yet.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        );
+
       case "manageUsers":
         return (
           <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
@@ -264,7 +407,7 @@ const AdminDashboard = () => {
         return (
           <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
             <h3 className="font-display text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-              <Calendar className="w-5 h-5" /> All Booking Sessions
+              <Calendar className="w-5 h-5" /> All Sessions
             </h3>
             <div className="overflow-x-auto">
               <Table>
@@ -304,7 +447,7 @@ const AdminDashboard = () => {
               {[
                 { label: "Total Students", value: String(stats.students), icon: Users },
                 { label: "Total Teachers", value: String(stats.teachers), icon: GraduationCap },
-                { label: "Total Sessions", value: String(stats.sessions), icon: Calendar },
+                { label: "Total Requests", value: String(stats.sessions), icon: Calendar },
                 { label: "Pending Requests", value: String(stats.pending), icon: BookOpen },
               ].map(({ label, value, icon: Icon }) => (
                 <div key={label} className="bg-card rounded-2xl border border-border p-5 premium-shadow-sm">
@@ -332,13 +475,13 @@ const AdminDashboard = () => {
                 </div>
               </div>
               <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
-                <h3 className="font-display text-lg font-bold text-foreground mb-4">Recent Sessions</h3>
+                <h3 className="font-display text-lg font-bold text-foreground mb-4">Recent Requests</h3>
                 <div className="space-y-3">
                   {sessions.slice(0, 5).map((s) => (
                     <div key={s.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50">
                       <div>
                         <p className="text-sm font-medium text-foreground">{s.subject}</p>
-                        <p className="text-xs text-muted-foreground">{s.student_name} → {s.teacher_name}</p>
+                        <p className="text-xs text-muted-foreground">{s.student_name}</p>
                       </div>
                       <StatusBadge status={s.status} />
                     </div>
