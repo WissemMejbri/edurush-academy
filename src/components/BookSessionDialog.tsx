@@ -463,7 +463,7 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
         </AnimatePresence>
 
         {/* Navigation buttons */}
-        <div className="flex justify-between mt-4">
+        <div className="flex justify-between mt-4 pb-2 sm:pb-0">
           <Button
             variant="outline"
             onClick={() => step > 0 ? setStep(s => s - 1) : onOpenChange(false)}

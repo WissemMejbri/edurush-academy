@@ -69,17 +69,17 @@ const ProgramsSection = () => {
                     </li>
                   ))}
                 </ul>
-                <div className="flex items-center gap-4">
-                  <a href="#contact" className="inline-flex items-center gap-2 text-accent font-semibold text-sm hover:gap-3 transition-all">
-                    {t("programs.learnMore")} <ArrowRight className="w-4 h-4" />
-                  </a>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                   <button
                     onClick={handleBookSession}
-                    className="inline-flex items-center gap-2 bg-accent text-accent-foreground px-5 py-2 rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-accent/20 transition-all"
+                    className="inline-flex items-center gap-2 bg-accent text-accent-foreground px-5 py-2.5 rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-accent/20 transition-all min-h-[44px]"
                   >
                     <Plus className="w-4 h-4" />
                     {t("dashboard.bookSession")}
                   </button>
+                  <a href="#contact" className="inline-flex items-center gap-2 text-accent font-semibold text-sm hover:gap-3 transition-all min-h-[44px]">
+                    {t("programs.learnMore")} <ArrowRight className="w-4 h-4" />
+                  </a>
                 </div>
               </div>
             </motion.div>
