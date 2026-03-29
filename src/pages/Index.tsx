@@ -12,6 +12,7 @@ import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
 import CookieConsent from "@/components/CookieConsent";
 import AIChatbot from "@/components/AIChatbot";
+import { WhatsAppButton } from "@/components/WhatsAppButton";
 
 const Index = () => {
   return (
