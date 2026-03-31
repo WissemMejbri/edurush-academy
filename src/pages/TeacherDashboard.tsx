@@ -5,20 +5,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Users, Calendar, FileText, BookOpen, MessageSquare,
-  Settings, LogOut, ClipboardCheck, Home, UserCog, Menu, Video, Link as LinkIcon
+  Settings, LogOut, ClipboardCheck, Home, UserCog, Menu
 } from "lucide-react";
 import { BookingRequestCard } from "@/components/BookingRequestCard";
 import { TeacherProfileSetup } from "@/components/TeacherProfileSetup";
 import { TeacherAvailability } from "@/components/dashboard/TeacherAvailability";
 import { SessionCalendar } from "@/components/dashboard/SessionCalendar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from "@/components/ui/dialog";
-import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import edurushLogo from "@/assets/edurush-logo.jpeg";
 
 const menuItems = [
@@ -49,22 +41,15 @@ interface BookingSession {
   student_name?: string;
   proposed_date?: string | null;
   proposed_time?: string | null;
-  recording_url?: string | null;
 }
 
 const TeacherDashboard = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [sessions, setSessions] = useState<BookingSession[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Recording submission
-  const [recordingSession, setRecordingSession] = useState<BookingSession | null>(null);
-  const [recordingUrl, setRecordingUrl] = useState("");
-  const [submittingRecording, setSubmittingRecording] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -109,30 +94,10 @@ const TeacherDashboard = () => {
     navigate("/");
   };
 
-  const handleSubmitRecording = async () => {
-    if (!recordingSession || !recordingUrl) return;
-    setSubmittingRecording(true);
-    try {
-      const { error } = await supabase
-        .from("booking_sessions")
-        .update({ recording_url: recordingUrl } as any)
-        .eq("id", recordingSession.id);
-      if (error) throw error;
-      toast({ title: "Recording submitted!", description: "The admin can now view the recording." });
-      setRecordingSession(null);
-      setRecordingUrl("");
-      fetchSessions();
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally {
-      setSubmittingRecording(false);
-    }
-  };
-
   if (!user) return null;
 
   const pendingSessions = sessions.filter(s => s.status === "pending");
-  const upcomingSessions = sessions.filter(s => s.status === "accepted" || s.status === "scheduled" || s.status === "tutor_assigned");
+  const upcomingSessions = sessions.filter(s => s.status === "accepted");
   const completedSessions = sessions.filter(s => s.status === "completed");
   const uniqueStudents = new Set(sessions.map(s => s.student_id)).size;
 
@@ -185,28 +150,12 @@ const TeacherDashboard = () => {
                 </div>
               </div>
               <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
-                <h3 className="font-display text-lg font-bold text-foreground mb-4">Sessions Needing Recordings</h3>
+                <h3 className="font-display text-lg font-bold text-foreground mb-4">{t("dashboard.upcomingSessions")}</h3>
                 <div className="space-y-3">
-                  {completedSessions.filter(s => !s.recording_url).length === 0 ? (
-                    <p className="text-sm text-muted-foreground">All recordings submitted ✓</p>
-                  ) : completedSessions.filter(s => !s.recording_url).slice(0, 5).map(session => (
-                    <div key={session.id} className="bg-card rounded-xl border border-border p-4 premium-shadow-sm space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="font-semibold text-foreground text-sm">{session.subject} — {session.level}</p>
-                          <p className="text-xs text-muted-foreground">{session.student_name} · {new Date(session.requested_date).toLocaleDateString()}</p>
-                        </div>
-                        <StatusBadge status={session.status} />
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => { setRecordingSession(session); setRecordingUrl(""); }}
-                        className="gap-1"
-                      >
-                        <Video className="w-3.5 h-3.5" /> Submit Recording
-                      </Button>
-                    </div>
+                  {upcomingSessions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">{t("dashboard.noSessions")}</p>
+                  ) : upcomingSessions.slice(0, 5).map(session => (
+                    <BookingRequestCard key={session.id} session={session} onStatusChange={fetchSessions} variant="teacher" />
                   ))}
                 </div>
               </div>
@@ -322,41 +271,6 @@ const TeacherDashboard = () => {
           </motion.div>
         </AnimatePresence>
       </main>
-
-      {/* Submit Recording Dialog */}
-      <Dialog open={!!recordingSession} onOpenChange={() => setRecordingSession(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Video className="w-5 h-5" /> Submit Session Recording
-            </DialogTitle>
-            <DialogDescription>
-              Submit the recording for {recordingSession?.subject} session with {recordingSession?.student_name}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <LinkIcon className="w-4 h-4" /> Recording Link
-              </Label>
-              <Input
-                placeholder="https://zoom.us/rec/... or Google Drive link"
-                value={recordingUrl}
-                onChange={e => setRecordingUrl(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Paste a Zoom recording link, Google Drive link, or any accessible URL.
-              </p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRecordingSession(null)}>Cancel</Button>
-            <Button onClick={handleSubmitRecording} disabled={submittingRecording || !recordingUrl}>
-              {submittingRecording ? "Submitting..." : "Submit Recording"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

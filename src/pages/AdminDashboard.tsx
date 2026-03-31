@@ -5,8 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Users, GraduationCap, BookOpen, Calendar, BarChart3,
-  Settings, LogOut, Home, UserCog, UserPlus, Menu, ClipboardList,
-  Check, X, Clock, Video
+  Settings, LogOut, Home, UserCog, UserPlus, Menu, ClipboardList
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,17 +47,6 @@ interface BookingSession {
   student_name?: string;
   student_email?: string;
   teacher_name?: string;
-  zoom_link?: string | null;
-  recording_url?: string | null;
-  proposed_date?: string | null;
-  proposed_time?: string | null;
-}
-
-interface TeacherAvailabilitySlot {
-  teacher_id: string;
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
 }
 
 const sidebarItems = [
@@ -67,7 +55,6 @@ const sidebarItems = [
   { key: "manageUsers", icon: Users, label: "Manage Users" },
   { key: "addTeacher", icon: UserPlus, label: "Add Teacher" },
   { key: "manageSessions", icon: Calendar, label: "Manage Sessions" },
-  { key: "recordings", icon: Video, label: "Session Recordings" },
   { key: "settings", icon: Settings, label: "Settings" },
 ];
 
@@ -90,7 +77,6 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState({ students: 0, teachers: 0, sessions: 0, pending: 0 });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [teachers, setTeachers] = useState<{ user_id: string; full_name: string }[]>([]);
-  const [teacherAvailability, setTeacherAvailability] = useState<TeacherAvailabilitySlot[]>([]);
 
   // Add teacher form
   const [addTeacherOpen, setAddTeacherOpen] = useState(false);
@@ -100,12 +86,6 @@ const AdminDashboard = () => {
   // Edit teacher dialog
   const [editUser, setEditUser] = useState<UserWithRole | null>(null);
   const [editName, setEditName] = useState("");
-
-  // Propose new time dialog
-  const [proposeSession, setProposeSession] = useState<BookingSession | null>(null);
-  const [proposedDate, setProposedDate] = useState("");
-  const [proposedTime, setProposedTime] = useState("");
-  const [proposingLoading, setProposingLoading] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -134,6 +114,7 @@ const AdminDashboard = () => {
       }));
       setUsers(usersWithRoles);
 
+      // Build teachers list
       const teacherList = rolesData
         .filter(r => r.role === "teacher")
         .map(r => ({
@@ -148,10 +129,6 @@ const AdminDashboard = () => {
         teachers: rolesData.filter(r => r.role === "teacher").length,
       }));
     }
-
-    // Fetch teacher availability
-    const { data: availData } = await supabase.from("teacher_availability").select("*");
-    if (availData) setTeacherAvailability(availData);
 
     const { data: sessionsData } = await supabase
       .from("booking_sessions")
@@ -190,12 +167,12 @@ const AdminDashboard = () => {
       toast({ title: "Status updated" });
 
       // Send notification for status changes
-      if (["tutor_assigned", "scheduled", "rejected", "declined"].includes(newStatus)) {
-        const eventType = newStatus === "rejected" ? "declined" : newStatus;
+      const session = sessions.find(s => s.id === sessionId);
+      if (session && (newStatus === "tutor_assigned" || newStatus === "scheduled" || newStatus === "declined")) {
         supabase.functions.invoke("booking-notifications", {
           body: {
             session_id: sessionId,
-            event_type: eventType,
+            event_type: newStatus === "declined" ? "declined" : newStatus,
           },
         }).catch(console.error);
       }
@@ -217,40 +194,6 @@ const AdminDashboard = () => {
         body: { session_id: sessionId, event_type: "tutor_assigned" },
       }).catch(console.error);
       fetchData();
-    }
-  };
-
-  const handleProposeNewTime = async () => {
-    if (!proposeSession || !proposedDate || !proposedTime) return;
-    setProposingLoading(true);
-    try {
-      const { error } = await supabase
-        .from("booking_sessions")
-        .update({
-          proposed_date: proposedDate,
-          proposed_time: proposedTime,
-          status: "scheduled",
-        } as any)
-        .eq("id", proposeSession.id);
-      if (error) throw error;
-
-      // Send scheduled notification with proposed time
-      supabase.functions.invoke("booking-notifications", {
-        body: {
-          session_id: proposeSession.id,
-          event_type: "scheduled",
-        },
-      }).catch(console.error);
-
-      toast({ title: "New time proposed", description: "The student will be notified via email." });
-      setProposeSession(null);
-      setProposedDate("");
-      setProposedTime("");
-      fetchData();
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally {
-      setProposingLoading(false);
     }
   };
 
@@ -286,20 +229,6 @@ const AdminDashboard = () => {
     navigate("/");
   };
 
-  // Check if a teacher is available at a given day/time
-  const getAvailableTeachers = (requestedDate: string, requestedTime: string) => {
-    const date = new Date(requestedDate + "T00:00:00");
-    const dayOfWeek = date.getDay(); // 0=Sun, 1=Mon...
-
-    return teachers.map(teacher => {
-      const slots = teacherAvailability.filter(a => a.teacher_id === teacher.user_id && a.day_of_week === dayOfWeek);
-      const isAvailable = slots.some(slot => {
-        return requestedTime >= slot.start_time && requestedTime < slot.end_time;
-      });
-      return { ...teacher, isAvailable, hasSchedule: slots.length > 0 };
-    });
-  };
-
   if (!user) return null;
 
   const renderContent = () => {
@@ -310,130 +239,81 @@ const AdminDashboard = () => {
             <h3 className="font-display text-lg font-bold text-foreground mb-4 flex items-center gap-2">
               <ClipboardList className="w-5 h-5" /> Tutoring Requests / Program Applications
             </h3>
-            <div className="space-y-6">
-              {sessions.map((s) => {
-                const availableTeachers = getAvailableTeachers(s.requested_date, s.requested_time);
-                return (
-                  <div key={s.id} className="border border-border rounded-xl p-4 space-y-4">
-                    {/* Request Info */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Student</p>
-                        <p className="font-medium text-foreground">{s.student_name}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Program</p>
-                        <p className="font-medium text-foreground">{s.subject} — {s.level}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Preferred Date & Time</p>
-                        <p className="font-medium text-foreground">
-                          {new Date(s.requested_date).toLocaleDateString()} at {s.requested_time}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Submitted</p>
-                        <p className="text-sm text-muted-foreground">{new Date(s.created_at).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-
-                    {s.notes && (
-                      <p className="text-sm text-muted-foreground italic">"{s.notes}"</p>
-                    )}
-
-                    {s.proposed_date && (
-                      <p className="text-sm text-accent font-medium">
-                        📅 Scheduled: {new Date(s.proposed_date).toLocaleDateString()} at {s.proposed_time}
-                      </p>
-                    )}
-
-                    {s.recording_url && (
-                      <div className="flex items-center gap-2">
-                        <Video className="w-4 h-4 text-accent" />
-                        <a href={s.recording_url} target="_blank" rel="noopener noreferrer" className="text-sm text-accent hover:underline">
-                          View Recording
-                        </a>
-                      </div>
-                    )}
-
-                    {/* Available Teachers Section */}
-                    {s.status === "pending" && (
-                      <div className="bg-muted/50 rounded-lg p-3">
-                        <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1">
-                          <Users className="w-3.5 h-3.5" /> Available Teachers for This Time
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {availableTeachers.map(teacher => (
-                            <span
-                              key={teacher.user_id}
-                              className={`text-xs px-2 py-1 rounded-full border flex items-center gap-1 ${
-                                teacher.isAvailable
-                                  ? "bg-emerald-500/10 text-emerald-600 border-emerald-200"
-                                  : "bg-muted text-muted-foreground border-border"
-                              }`}
-                            >
-                              {teacher.isAvailable ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                              {teacher.full_name}
-                              {!teacher.hasSchedule && " (no schedule)"}
-                            </span>
-                          ))}
-                          {availableTeachers.length === 0 && (
-                            <span className="text-xs text-muted-foreground">No teachers registered</span>
-                          )}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Student</TableHead>
+                    <TableHead>Program</TableHead>
+                    <TableHead>Preferred Date & Time</TableHead>
+                    <TableHead>Submitted</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Assign Tutor</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sessions.map((s) => (
+                    <TableRow key={s.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium text-foreground">{s.student_name}</p>
                         </div>
-                      </div>
-                    )}
-
-                    {/* Actions Row */}
-                    <div className="flex flex-wrap items-center gap-3">
-                      <div className="flex items-center gap-2">
+                      </TableCell>
+                      <TableCell>
+                        <p className="font-medium text-foreground">{s.subject}</p>
+                        <p className="text-xs text-muted-foreground">{s.level}</p>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(s.requested_date).toLocaleDateString()} at {s.requested_time}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
+                        {new Date(s.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
                         <StatusBadge status={s.status} />
-                      </div>
-                      <Select
-                        value={s.teacher_id === s.student_id ? "" : s.teacher_id}
-                        onValueChange={(v) => handleAssignTeacher(s.id, v)}
-                      >
-                        <SelectTrigger className="w-36">
-                          <SelectValue placeholder="Assign tutor..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {teachers.map(t => (
-                            <SelectItem key={t.user_id} value={t.user_id}>{t.full_name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        value={s.status}
-                        onValueChange={(v) => handleStatusChange(s.id, v)}
-                      >
-                        <SelectTrigger className="w-36">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {requestStatuses.map(st => (
-                            <SelectItem key={st.value} value={st.value}>{st.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setProposeSession(s);
-                          setProposedDate("");
-                          setProposedTime("");
-                        }}
-                        className="gap-1"
-                      >
-                        <Clock className="w-3.5 h-3.5" /> Propose New Time
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-              {sessions.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">No tutoring requests yet.</p>
-              )}
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={s.teacher_id === s.student_id ? "" : s.teacher_id}
+                          onValueChange={(v) => handleAssignTeacher(s.id, v)}
+                        >
+                          <SelectTrigger className="w-36">
+                            <SelectValue placeholder="Assign tutor..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {teachers.map(t => (
+                              <SelectItem key={t.user_id} value={t.user_id}>{t.full_name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={s.status}
+                          onValueChange={(v) => handleStatusChange(s.id, v)}
+                        >
+                          <SelectTrigger className="w-36">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {requestStatuses.map(st => (
+                              <SelectItem key={st.value} value={st.value}>{st.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {sessions.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        No tutoring requests yet.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
           </div>
         );
@@ -554,52 +434,6 @@ const AdminDashboard = () => {
                       </TableCell>
                     </TableRow>
                   ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        );
-
-      case "recordings":
-        return (
-          <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
-            <h3 className="font-display text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-              <Video className="w-5 h-5" /> Session Recordings
-            </h3>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Student</TableHead>
-                    <TableHead>Teacher</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Recording</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sessions.filter(s => s.recording_url).map((s) => (
-                    <TableRow key={s.id}>
-                      <TableCell className="font-medium">{s.student_name}</TableCell>
-                      <TableCell>{s.teacher_name}</TableCell>
-                      <TableCell>{s.subject} ({s.level})</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(s.requested_date).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <a href={s.recording_url!} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline text-sm flex items-center gap-1">
-                          <Video className="w-3.5 h-3.5" /> View Recording
-                        </a>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {sessions.filter(s => s.recording_url).length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                        No recordings submitted yet.
-                      </TableCell>
-                    </TableRow>
-                  )}
                 </TableBody>
               </Table>
             </div>
@@ -740,36 +574,6 @@ const AdminDashboard = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditUser(null)}>Cancel</Button>
             <Button onClick={handleEditProfile}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Propose New Time Dialog */}
-      <Dialog open={!!proposeSession} onOpenChange={() => setProposeSession(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Propose New Time</DialogTitle>
-            <DialogDescription>
-              Suggest an alternative schedule for {proposeSession?.student_name}'s {proposeSession?.subject} request.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>New Date</Label>
-                <Input type="date" value={proposedDate} onChange={e => setProposedDate(e.target.value)} min={new Date().toISOString().split("T")[0]} />
-              </div>
-              <div className="space-y-2">
-                <Label>New Time</Label>
-                <Input type="time" value={proposedTime} onChange={e => setProposedTime(e.target.value)} />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setProposeSession(null)}>Cancel</Button>
-            <Button onClick={handleProposeNewTime} disabled={proposingLoading || !proposedDate || !proposedTime}>
-              {proposingLoading ? "Sending..." : "Propose & Notify Student"}
-            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

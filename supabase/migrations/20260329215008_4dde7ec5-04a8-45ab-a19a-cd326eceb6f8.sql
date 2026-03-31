@@ -1,1 +1,0 @@
-ALTER TABLE public.booking_sessions ADD COLUMN IF NOT EXISTS recording_url TEXT DEFAULT NULL;
