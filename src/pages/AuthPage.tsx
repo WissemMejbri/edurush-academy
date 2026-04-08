@@ -63,6 +63,10 @@ const AuthPage = () => {
           },
         });
         if (error) throw error;
+        if (data.user && !data.user.identities?.length) {
+          toast({ title: "An account with this email already exists.", variant: "destructive" });
+          return;
+        }
         if (data.user) {
           toast({ title: t("auth.signupSuccess") });
           navigate(`/dashboard/${role}`);

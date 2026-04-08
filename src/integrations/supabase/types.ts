@@ -24,6 +24,7 @@ export type Database = {
           proposed_date: string | null
           proposed_time: string | null
           record_lesson: boolean
+          recording_url: string | null
           requested_date: string
           requested_time: string
           status: string
@@ -42,6 +43,7 @@ export type Database = {
           proposed_date?: string | null
           proposed_time?: string | null
           record_lesson?: boolean
+          recording_url?: string | null
           requested_date: string
           requested_time: string
           status?: string
@@ -60,6 +62,7 @@ export type Database = {
           proposed_date?: string | null
           proposed_time?: string | null
           record_lesson?: boolean
+          recording_url?: string | null
           requested_date?: string
           requested_time?: string
           status?: string
