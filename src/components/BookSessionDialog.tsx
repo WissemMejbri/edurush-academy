@@ -161,6 +161,7 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
           </p>
         </div>
 
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-2">
         <AnimatePresence mode="wait">
           <motion.div
             key={step}
