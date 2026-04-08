@@ -305,23 +305,24 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
             )}
           </motion.div>
         </AnimatePresence>
+        </div>
 
-        {/* Navigation buttons */}
-        <div className="flex justify-between mt-4 pb-2 sm:pb-0">
+        {/* Navigation buttons — sticky bottom */}
+        <div className="flex justify-between p-4 sm:p-6 pt-3 sm:pt-3 border-t border-border bg-background shrink-0">
           <Button
             variant="outline"
             onClick={() => step > 0 ? setStep(s => s - 1) : onOpenChange(false)}
-            className="gap-1"
+            className="gap-1 min-h-[44px]"
           >
             <ChevronLeft className="w-4 h-4" />
             {step === 0 ? "Cancel" : "Back"}
           </Button>
           {step < 3 ? (
-            <Button onClick={() => setStep(s => s + 1)} disabled={!canNext()} className="gap-1">
+            <Button onClick={() => setStep(s => s + 1)} disabled={!canNext()} className="gap-1 min-h-[44px]">
               Next <ChevronRight className="w-4 h-4" />
             </Button>
           ) : (
-            <Button onClick={handleSubmit} disabled={loading}>
+            <Button onClick={handleSubmit} disabled={loading} className="min-h-[44px]">
               {loading ? "Submitting..." : "Submit Application"}
             </Button>
           )}
