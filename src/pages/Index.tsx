@@ -3,7 +3,7 @@ import HeroSection from "@/components/HeroSection";
 import AboutSection from "@/components/AboutSection";
 import ProgramsSection from "@/components/ProgramsSection";
 import WhyChooseUsSection from "@/components/WhyChooseUsSection";
-import TutorProfilesSection from "@/components/TutorProfilesSection";
+
 import TestimonialsSection from "@/components/TestimonialsSection";
 import SkillsSection from "@/components/SkillsSection";
 import HowItWorksSection from "@/components/HowItWorksSection";
