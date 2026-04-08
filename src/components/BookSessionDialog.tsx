@@ -138,26 +138,28 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[100dvh] sm:max-h-[90vh] h-full sm:h-auto overflow-y-auto p-4 sm:p-6">
-        <DialogHeader>
-          <DialogTitle className="font-display text-xl">{t("booking.title")}</DialogTitle>
-          <DialogDescription>{t("booking.description")}</DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-lg max-h-[100dvh] sm:max-h-[90vh] h-full sm:h-auto flex flex-col overflow-hidden p-0 sm:p-0 gap-0">
+        <div className="p-4 sm:p-6 pb-0 sm:pb-0">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">{t("booking.title")}</DialogTitle>
+            <DialogDescription>{t("booking.description")}</DialogDescription>
+          </DialogHeader>
 
-        {/* Step indicator */}
-        <div className="flex items-center gap-1 mb-4">
-          {STEPS.map((s, i) => (
-            <div key={s} className="flex items-center gap-1 flex-1">
-              <div className={cn(
-                "h-1.5 rounded-full flex-1 transition-colors",
-                i <= step ? "bg-accent" : "bg-muted"
-              )} />
-            </div>
-          ))}
+          {/* Step indicator */}
+          <div className="flex items-center gap-1.5 mt-4 mb-1">
+            {STEPS.map((s, i) => (
+              <div key={s} className="flex flex-col items-center gap-1 flex-1">
+                <div className={cn(
+                  "h-2 rounded-full w-full transition-colors",
+                  i <= step ? "bg-accent" : "bg-muted"
+                )} />
+              </div>
+            ))}
+          </div>
+          <p className="text-xs font-medium text-muted-foreground mb-3">
+            Step {step + 1} of {STEPS.length}: {STEPS[step]}
+          </p>
         </div>
-        <p className="text-xs font-medium text-muted-foreground mb-4">
-          Step {step + 1}: {STEPS[step]}
-        </p>
 
         <AnimatePresence mode="wait">
           <motion.div
