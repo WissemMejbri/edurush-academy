@@ -257,6 +257,15 @@ serve(async (req) => {
   }
 });
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function buildEmail(opts: {
   heading: string;
   message: string;
@@ -267,7 +276,7 @@ function buildEmail(opts: {
   const rows = opts.details
     .map(
       (d) =>
-        `<tr><td style="padding:8px 12px;font-weight:600;color:#1a2744;border-bottom:1px solid #eef1f6">${d.label}</td><td style="padding:8px 12px;color:#4a5568;border-bottom:1px solid #eef1f6">${d.value}</td></tr>`
+        `<tr><td style="padding:8px 12px;font-weight:600;color:#1a2744;border-bottom:1px solid #eef1f6">${escapeHtml(d.label)}</td><td style="padding:8px 12px;color:#4a5568;border-bottom:1px solid #eef1f6">${escapeHtml(d.value)}</td></tr>`
     )
     .join("");
 
@@ -283,13 +292,13 @@ function buildEmail(opts: {
 <p style="color:rgba(255,255,255,0.7);font-size:13px;margin:0">International Academic Excellence</p>
 </td></tr>
 <tr><td style="padding:40px">
-<h2 style="color:#1a2744;font-size:22px;margin:0 0 16px">${opts.heading}</h2>
-<p style="color:#4a5568;font-size:15px;line-height:1.6;margin:0 0 24px">${opts.message.replace(/\n/g, "<br>")}</p>
+<h2 style="color:#1a2744;font-size:22px;margin:0 0 16px">${escapeHtml(opts.heading)}</h2>
+<p style="color:#4a5568;font-size:15px;line-height:1.6;margin:0 0 24px">${escapeHtml(opts.message).replace(/\n/g, "<br>")}</p>
 <table width="100%" style="border-radius:12px;overflow:hidden;border:1px solid #eef1f6;margin-bottom:24px" cellpadding="0" cellspacing="0">
 ${rows}
 </table>
-${opts.notes ? `<div style="background:#fef9f0;border-left:4px solid #c8933f;padding:12px 16px;border-radius:0 8px 8px 0;margin-bottom:24px"><p style="color:#92631e;font-size:14px;margin:0"><strong>Notes:</strong> ${opts.notes}</p></div>` : ""}
-<p style="color:#718096;font-size:14px;line-height:1.6;margin:0">${opts.footer}</p>
+${opts.notes ? `<div style="background:#fef9f0;border-left:4px solid #c8933f;padding:12px 16px;border-radius:0 8px 8px 0;margin-bottom:24px"><p style="color:#92631e;font-size:14px;margin:0"><strong>Notes:</strong> ${escapeHtml(opts.notes)}</p></div>` : ""}
+<p style="color:#718096;font-size:14px;line-height:1.6;margin:0">${escapeHtml(opts.footer)}</p>
 </td></tr>
 <tr><td style="background:#f8fafc;padding:24px 40px;text-align:center;border-top:1px solid #eef1f6">
 <p style="color:#a0aec0;font-size:12px;margin:0">© ${new Date().getFullYear()} EduRush Academy · Tunis, Tunisia</p>
