@@ -257,6 +257,15 @@ serve(async (req) => {
   }
 });
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function buildEmail(opts: {
   heading: string;
   message: string;
@@ -267,7 +276,7 @@ function buildEmail(opts: {
   const rows = opts.details
     .map(
       (d) =>
-        `<tr><td style="padding:8px 12px;font-weight:600;color:#1a2744;border-bottom:1px solid #eef1f6">${d.label}</td><td style="padding:8px 12px;color:#4a5568;border-bottom:1px solid #eef1f6">${d.value}</td></tr>`
+        `<tr><td style="padding:8px 12px;font-weight:600;color:#1a2744;border-bottom:1px solid #eef1f6">${escapeHtml(d.label)}</td><td style="padding:8px 12px;color:#4a5568;border-bottom:1px solid #eef1f6">${escapeHtml(d.value)}</td></tr>`
     )
     .join("");
 
