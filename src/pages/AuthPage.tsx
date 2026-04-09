@@ -262,6 +262,17 @@ const AuthPage = () => {
                 });
                 if (result.error) {
                   toast({ title: (result.error as Error).message || "Google sign-in failed", variant: "destructive" });
+                  return;
+                }
+                if (result.redirected) {
+                  // Browser is redirecting to Google — nothing more to do
+                  return;
+                }
+                // OAuth complete, session set — redirect to dashboard
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                  toast({ title: t("auth.loginSuccess") });
+                  await redirectToDashboard(session.user.id, session.user.user_metadata?.role);
                 }
               } catch (err: any) {
                 toast({ title: err.message || "Google sign-in failed", variant: "destructive" });
