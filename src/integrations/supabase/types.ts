@@ -168,6 +168,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_session_notes: {
+        Args: { new_notes: string; session_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "teacher" | "student"
