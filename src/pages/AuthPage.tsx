@@ -36,17 +36,31 @@ const AuthPage = () => {
   const [resetEmail, setResetEmail] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
 
+  const redirectToDashboard = async (userId: string, metadataRole?: string) => {
+    const { data: roleData } = await supabase
+      .rpc("get_user_role", { _user_id: userId });
+    const userRole = roleData || metadataRole || role || "student";
+    navigate(`/dashboard/${userRole}`, { replace: true });
+  };
+
   useEffect(() => {
-    const checkAuthAndRedirect = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    // Restore session on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        const { data: roleData } = await supabase
-          .rpc("get_user_role", { _user_id: session.user.id });
-        const userRole = roleData || session.user.user_metadata?.role || "student";
-        navigate(`/dashboard/${userRole}`);
+        redirectToDashboard(session.user.id, session.user.user_metadata?.role);
       }
-    };
-    checkAuthAndRedirect();
+    });
+
+    // Listen for auth state changes (handles OAuth callback)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === "SIGNED_IN" && session) {
+          redirectToDashboard(session.user.id, session.user.user_metadata?.role);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
