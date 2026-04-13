@@ -99,15 +99,18 @@ const HeroSection = () => {
             ))}
           </motion.div>
         </div>
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7, delay: 0.6 }} className="mt-16 grid grid-cols-3 gap-4 lg:hidden">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7, delay: 0.6 }} className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-3 lg:hidden">
           {[
-            { icon: Users, label: "260+ " + t("hero.students").split(" ")[0] },
-            { icon: GraduationCap, label: "25+ " + t("hero.tutors").split(" ")[0] },
-            { icon: Award, label: "98% " + t("hero.satisfaction").split(" ")[0] },
-          ].map(({ icon: Icon, label }) => (
-            <div key={label} className="glass-card rounded-xl p-4 flex items-center gap-3">
+            { icon: Users, value: "260+", label: t("hero.students") },
+            { icon: GraduationCap, value: "25+", label: t("hero.tutors") },
+            { icon: Award, value: "98%", label: t("hero.satisfaction") },
+          ].map(({ icon: Icon, value, label }) => (
+            <div key={label} className="glass-card rounded-xl p-3 sm:p-4 flex items-center gap-3 min-w-0 overflow-hidden">
               <Icon className="w-5 h-5 text-accent flex-shrink-0" />
-              <span className="text-xs font-semibold text-white">{label}</span>
+              <div className="min-w-0 flex-1">
+                <span className="block text-sm font-bold text-white truncate">{value}</span>
+                <span className="block text-[10px] sm:text-xs text-white/60 truncate">{label}</span>
+              </div>
             </div>
           ))}
         </motion.div>

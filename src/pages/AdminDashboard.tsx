@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Users, GraduationCap, BookOpen, Calendar, BarChart3,
-  Settings, LogOut, Home, UserCog, UserPlus, Menu, ClipboardList
+  Settings, LogOut, Home, UserCog, UserPlus, Menu, ClipboardList, UserCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,9 +49,24 @@ interface BookingSession {
   teacher_name?: string;
 }
 
+interface GuestRequest {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  subject: string;
+  level: string;
+  requested_date: string;
+  requested_time: string;
+  notes: string | null;
+  status: string;
+  created_at: string;
+}
+
 const sidebarItems = [
   { key: "overview", icon: BarChart3, label: "Overview" },
   { key: "tutoringRequests", icon: ClipboardList, label: "Tutoring Requests" },
+  { key: "guestRequests", icon: UserCheck, label: "Guest Requests" },
   { key: "manageUsers", icon: Users, label: "Manage Users" },
   { key: "addTeacher", icon: UserPlus, label: "Add Teacher" },
   { key: "manageSessions", icon: Calendar, label: "Manage Sessions" },
@@ -77,6 +92,7 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState({ students: 0, teachers: 0, sessions: 0, pending: 0 });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [teachers, setTeachers] = useState<{ user_id: string; full_name: string }[]>([]);
+  const [guestRequests, setGuestRequests] = useState<GuestRequest[]>([]);
 
   // Add teacher form
   const [addTeacherOpen, setAddTeacherOpen] = useState(false);
@@ -145,6 +161,15 @@ const AdminDashboard = () => {
         teacher_name: nameMap.get(s.teacher_id) || "Unassigned",
       })));
       setStats(prev => ({ ...prev, sessions: sessionsData.length, pending: sessionsData.filter(s => s.status === "pending").length }));
+    }
+
+    // Fetch guest booking requests
+    const { data: guestData } = await supabase
+      .from("guest_booking_requests" as any)
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (guestData) {
+      setGuestRequests(guestData as any as GuestRequest[]);
     }
   };
 
@@ -309,6 +334,87 @@ const AdminDashboard = () => {
                     <TableRow>
                       <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                         No tutoring requests yet.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        );
+
+      case "guestRequests":
+        return (
+          <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
+            <h3 className="font-display text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+              <UserCheck className="w-5 h-5" /> Guest Requests
+            </h3>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Program</TableHead>
+                    <TableHead>Preferred Date & Time</TableHead>
+                    <TableHead>Submitted</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {guestRequests.map((g) => (
+                    <TableRow key={g.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-foreground">{g.full_name}</p>
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">Guest</Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{g.email}</TableCell>
+                      <TableCell className="text-muted-foreground">{g.phone || "—"}</TableCell>
+                      <TableCell>
+                        <p className="font-medium text-foreground">{g.subject}</p>
+                        <p className="text-xs text-muted-foreground">{g.level}</p>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(g.requested_date).toLocaleDateString()} at {g.requested_time}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
+                        {new Date(g.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={g.status} />
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={g.status}
+                          onValueChange={async (v) => {
+                            const { error } = await supabase
+                              .from("guest_booking_requests" as any)
+                              .update({ status: v } as any)
+                              .eq("id", g.id);
+                            if (error) toast({ title: "Failed to update", variant: "destructive" });
+                            else { toast({ title: "Status updated" }); fetchData(); }
+                          }}
+                        >
+                          <SelectTrigger className="w-36">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {requestStatuses.map(st => (
+                              <SelectItem key={st.value} value={st.value}>{st.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {guestRequests.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                        No guest requests yet.
                       </TableCell>
                     </TableRow>
                   )}
