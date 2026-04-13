@@ -162,6 +162,15 @@ const AdminDashboard = () => {
       })));
       setStats(prev => ({ ...prev, sessions: sessionsData.length, pending: sessionsData.filter(s => s.status === "pending").length }));
     }
+
+    // Fetch guest booking requests
+    const { data: guestData } = await supabase
+      .from("guest_booking_requests" as any)
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (guestData) {
+      setGuestRequests(guestData as any as GuestRequest[]);
+    }
   };
 
   useEffect(() => { if (user) fetchData(); }, [user]);
