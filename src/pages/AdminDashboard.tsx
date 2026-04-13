@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Users, GraduationCap, BookOpen, Calendar, BarChart3,
-  Settings, LogOut, Home, UserCog, UserPlus, Menu, ClipboardList
+  Settings, LogOut, Home, UserCog, UserPlus, Menu, ClipboardList, UserCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
