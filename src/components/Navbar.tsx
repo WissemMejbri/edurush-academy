@@ -10,8 +10,31 @@ import logoImg from "@/assets/edurush-logo.jpeg";
 
 const Navbar = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string>("student");
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        supabase.rpc("get_user_role", { _user_id: session.user.id }).then(({ data }) => {
+          setUserRole(data || session.user.user_metadata?.role || "student");
+        });
+      }
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        supabase.rpc("get_user_role", { _user_id: session.user.id }).then(({ data }) => {
+          setUserRole(data || session.user.user_metadata?.role || "student");
+        });
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   const navItems = [
     { label: t("nav.home"), href: "#home" },
