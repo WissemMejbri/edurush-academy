@@ -100,12 +100,21 @@ const Navbar = () => {
                 </a>
               ))}
               <div className="py-2 flex items-center gap-3"><LanguageSwitcher /><ThemeToggle /></div>
-              <Link to="/auth" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-foreground/80 hover:text-accent py-2 transition-colors">
-                {t("nav.login")}
-              </Link>
-              <a href="#contact" onClick={() => setMobileOpen(false)} className="bg-accent text-accent-foreground px-5 py-2.5 rounded-xl text-sm font-semibold text-center hover:opacity-90 transition-opacity mt-2">
-                {t("nav.bookConsultation")}
-              </a>
+              {user ? (
+                <Link to={`/dashboard/${userRole}`} onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-sm font-medium text-foreground/80 hover:text-accent py-2 transition-colors">
+                  <UserCircle className="w-6 h-6" />
+                  {t("nav.myDashboard") || "My Dashboard"}
+                </Link>
+              ) : (
+                <>
+                  <Link to="/auth" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-foreground/80 hover:text-accent py-2 transition-colors">
+                    {t("nav.login")}
+                  </Link>
+                  <a href="#contact" onClick={() => setMobileOpen(false)} className="bg-accent text-accent-foreground px-5 py-2.5 rounded-xl text-sm font-semibold text-center hover:opacity-90 transition-opacity mt-2">
+                    {t("nav.bookConsultation")}
+                  </a>
+                </>
+              )}
             </div>
           </motion.div>
         )}
