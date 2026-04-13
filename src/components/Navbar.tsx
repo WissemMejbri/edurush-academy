@@ -69,12 +69,20 @@ const Navbar = () => {
           ))}
           <LanguageSwitcher />
           <ThemeToggle />
-          <Link to="/auth" className="border border-border text-foreground px-4 py-2 rounded-xl text-sm font-semibold hover:bg-muted transition-colors">
-            {t("nav.login")}
-          </Link>
-          <a href="#contact" className="bg-accent text-accent-foreground px-5 py-2 rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-accent/20 transition-all">
-            {t("nav.bookConsultation")}
-          </a>
+          {user ? (
+            <Link to={`/dashboard/${userRole}`} className="flex items-center gap-2 text-foreground/70 hover:text-accent transition-colors" title={user.email}>
+              <UserCircle className="w-8 h-8" />
+            </Link>
+          ) : (
+            <>
+              <Link to="/auth" className="border border-border text-foreground px-4 py-2 rounded-xl text-sm font-semibold hover:bg-muted transition-colors">
+                {t("nav.login")}
+              </Link>
+              <a href="#contact" className="bg-accent text-accent-foreground px-5 py-2 rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-accent/20 transition-all">
+                {t("nav.bookConsultation")}
+              </a>
+            </>
+          )}
         </div>
 
         <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden p-2 text-foreground" aria-label="Toggle menu">
