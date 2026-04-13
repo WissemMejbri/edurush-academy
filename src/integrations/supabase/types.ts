@@ -74,6 +74,54 @@ export type Database = {
         }
         Relationships: []
       }
+      guest_booking_requests: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          is_guest: boolean
+          level: string
+          notes: string | null
+          phone: string | null
+          requested_date: string
+          requested_time: string
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          is_guest?: boolean
+          level: string
+          notes?: string | null
+          phone?: string | null
+          requested_date: string
+          requested_time: string
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          is_guest?: boolean
+          level?: string
+          notes?: string | null
+          phone?: string | null
+          requested_date?: string
+          requested_time?: string
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
