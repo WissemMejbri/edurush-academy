@@ -92,6 +92,7 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState({ students: 0, teachers: 0, sessions: 0, pending: 0 });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [teachers, setTeachers] = useState<{ user_id: string; full_name: string }[]>([]);
+  const [guestRequests, setGuestRequests] = useState<GuestRequest[]>([]);
 
   // Add teacher form
   const [addTeacherOpen, setAddTeacherOpen] = useState(false);
