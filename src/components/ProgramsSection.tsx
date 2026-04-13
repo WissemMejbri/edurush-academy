@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { BookSessionDialog } from "@/components/BookSessionDialog";
+import { GuestBookingDialog } from "@/components/GuestBookingDialog";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -15,11 +16,13 @@ const ProgramsSection = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [bookDialogOpen, setBookDialogOpen] = useState(false);
+  const [guestDialogOpen, setGuestDialogOpen] = useState(false);
 
   const handleBookSession = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      navigate("/auth");
+      // Open guest booking dialog instead of redirecting to auth
+      setGuestDialogOpen(true);
     } else {
       setBookDialogOpen(true);
     }
@@ -88,6 +91,7 @@ const ProgramsSection = () => {
       </div>
 
       <BookSessionDialog open={bookDialogOpen} onOpenChange={setBookDialogOpen} />
+      <GuestBookingDialog open={guestDialogOpen} onOpenChange={setGuestDialogOpen} />
     </section>
   );
 };
