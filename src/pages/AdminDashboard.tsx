@@ -49,9 +49,24 @@ interface BookingSession {
   teacher_name?: string;
 }
 
+interface GuestRequest {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  subject: string;
+  level: string;
+  requested_date: string;
+  requested_time: string;
+  notes: string | null;
+  status: string;
+  created_at: string;
+}
+
 const sidebarItems = [
   { key: "overview", icon: BarChart3, label: "Overview" },
   { key: "tutoringRequests", icon: ClipboardList, label: "Tutoring Requests" },
+  { key: "guestRequests", icon: UserCheck, label: "Guest Requests" },
   { key: "manageUsers", icon: Users, label: "Manage Users" },
   { key: "addTeacher", icon: UserPlus, label: "Add Teacher" },
   { key: "manageSessions", icon: Calendar, label: "Manage Sessions" },
