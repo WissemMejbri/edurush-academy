@@ -343,6 +343,87 @@ const AdminDashboard = () => {
           </div>
         );
 
+      case "guestRequests":
+        return (
+          <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
+            <h3 className="font-display text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+              <UserCheck className="w-5 h-5" /> Guest Requests
+            </h3>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Program</TableHead>
+                    <TableHead>Preferred Date & Time</TableHead>
+                    <TableHead>Submitted</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {guestRequests.map((g) => (
+                    <TableRow key={g.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-foreground">{g.full_name}</p>
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">Guest</Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{g.email}</TableCell>
+                      <TableCell className="text-muted-foreground">{g.phone || "—"}</TableCell>
+                      <TableCell>
+                        <p className="font-medium text-foreground">{g.subject}</p>
+                        <p className="text-xs text-muted-foreground">{g.level}</p>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(g.requested_date).toLocaleDateString()} at {g.requested_time}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
+                        {new Date(g.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={g.status} />
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={g.status}
+                          onValueChange={async (v) => {
+                            const { error } = await supabase
+                              .from("guest_booking_requests" as any)
+                              .update({ status: v } as any)
+                              .eq("id", g.id);
+                            if (error) toast({ title: "Failed to update", variant: "destructive" });
+                            else { toast({ title: "Status updated" }); fetchData(); }
+                          }}
+                        >
+                          <SelectTrigger className="w-36">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {requestStatuses.map(st => (
+                              <SelectItem key={st.value} value={st.value}>{st.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {guestRequests.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                        No guest requests yet.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        );
+
       case "manageUsers":
         return (
           <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm">
