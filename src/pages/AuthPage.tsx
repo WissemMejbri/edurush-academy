@@ -37,9 +37,15 @@ const AuthPage = () => {
   const [resetLoading, setResetLoading] = useState(false);
 
   const redirectToDashboard = async (userId: string, metadataRole?: string) => {
-    const { data: roleData } = await supabase
-      .rpc("get_user_role", { _user_id: userId });
-    const userRole = roleData || metadataRole || role || "student";
+    // Retry up to 3 times to handle race condition with handle_new_user trigger
+    let roleData: string | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { data } = await supabase.rpc("get_user_role", { _user_id: userId });
+      if (data) { roleData = data; break; }
+      await new Promise(r => setTimeout(r, 500));
+    }
+    const userRole = roleData || metadataRole || "student";
+    console.log("[Auth] Redirecting:", { userId, roleData, metadataRole, resolved: userRole });
     navigate(`/dashboard/${userRole}`, { replace: true });
   };
 
