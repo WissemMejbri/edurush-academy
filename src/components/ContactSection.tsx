@@ -43,18 +43,33 @@ const ContactSection = () => {
           <div className="grid lg:grid-cols-5 gap-8">
             <div className="lg:col-span-2 flex flex-col gap-5">
               {[
-                { icon: Mail, title: t("contact.emailUs"), desc: "info.edurushacademy@gmail.com" },
-                { icon: Clock, title: t("contact.responseTime"), desc: t("contact.responseTimeVal") },
-                { icon: Phone, title: t("contact.callUs"), desc: "+216 48 044 486" },
-              ].map(({ icon: Icon, title, desc }, i) => (
-                <motion.div key={title} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1, duration: 0.5 }} className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm flex items-start gap-4">
-                  <div className="w-11 h-11 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0"><Icon className="w-5 h-5 text-accent" /></div>
-                  <div>
-                    <h4 className="font-semibold text-foreground text-sm">{title}</h4>
-                    <p className="text-muted-foreground text-sm mt-1">{desc}</p>
-                  </div>
-                </motion.div>
-              ))}
+                { icon: Mail, title: t("contact.emailUs"), desc: "info.edurushacademy@gmail.com", href: "mailto:info.edurushacademy@gmail.com?subject=Inquiry%20about%20EduRush%20Academy" },
+                { icon: Clock, title: t("contact.responseTime"), desc: t("contact.responseTimeVal"), href: undefined },
+                { icon: Phone, title: t("contact.callUs"), desc: "+216 48 044 486", href: "tel:+21648044486" },
+              ].map(({ icon: Icon, title, desc, href }, i) => {
+                const content = (
+                  <>
+                    <div className="w-11 h-11 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0"><Icon className="w-5 h-5 text-accent" /></div>
+                    <div>
+                      <h4 className="font-semibold text-foreground text-sm">{title}</h4>
+                      <p className="text-muted-foreground text-sm mt-1">{desc}</p>
+                    </div>
+                  </>
+                );
+                return (
+                  <motion.div key={title} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1, duration: 0.5 }}>
+                    {href ? (
+                      <a href={href} className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm flex items-start gap-4 hover:border-accent/40 transition-colors cursor-pointer no-underline">
+                        {content}
+                      </a>
+                    ) : (
+                      <div className="bg-card rounded-2xl border border-border p-6 premium-shadow-sm flex items-start gap-4">
+                        {content}
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
             </div>
             <motion.form initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} onSubmit={handleSubmit} className="lg:col-span-3 bg-card rounded-2xl border border-border p-8 premium-shadow-sm">
               <div className="grid sm:grid-cols-2 gap-5 mb-5">
