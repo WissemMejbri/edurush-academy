@@ -56,8 +56,8 @@ const Footer = () => {
             <h4 className="font-display text-base font-bold text-primary-foreground mb-5">{t("footer.contactTitle")}</h4>
             <div className="space-y-4">
               <div className="flex items-center gap-3 text-sm text-primary-foreground/50"><MapPin className="w-4 h-4 text-accent flex-shrink-0" />{t("footer.location")}</div>
-              <div className="flex items-center gap-3 text-sm text-primary-foreground/50"><Mail className="w-4 h-4 text-accent flex-shrink-0" />info.edurushacademy@gmail.com</div>
-              <div className="flex items-center gap-3 text-sm text-primary-foreground/50"><Phone className="w-4 h-4 text-accent flex-shrink-0" />+216 48 044 486</div>
+              <a href="mailto:info.edurushacademy@gmail.com?subject=Inquiry%20about%20EduRush%20Academy" className="flex items-center gap-3 text-sm text-primary-foreground/50 hover:text-accent transition-colors"><Mail className="w-4 h-4 text-accent flex-shrink-0" />info.edurushacademy@gmail.com</a>
+              <a href="tel:+21648044486" className="flex items-center gap-3 text-sm text-primary-foreground/50 hover:text-accent transition-colors"><Phone className="w-4 h-4 text-accent flex-shrink-0" />+216 48 044 486</a>
             </div>
           </div>
         </div>
