@@ -10,7 +10,7 @@ import AuthPage from "./pages/AuthPage";
 import StudentDashboard from "./pages/StudentDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
-import AdminLogin from "./pages/AdminLogin";
+
 import AdminRouteGuard from "./components/AdminRouteGuard";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -30,8 +30,6 @@ const App = () => (
             <Route path="/dashboard/student" element={<StudentDashboard />} />
             <Route path="/dashboard/teacher" element={<TeacherDashboard />} />
             <Route path="/dashboard/admin" element={<AdminRouteGuard><AdminDashboard /></AdminRouteGuard>} />
-            <Route path="/admin" element={<AdminLogin />} />
-            <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
