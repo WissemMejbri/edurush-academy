@@ -95,6 +95,23 @@ export function GuestBookingDialog({ open, onOpenChange }: GuestBookingDialogPro
 
       if (error) throw error;
 
+      // Notify the academy + send auto-reply (best effort, non-blocking)
+      supabase.functions.invoke("send-inquiry-email", {
+        body: {
+          type: "guest_session_booking",
+          data: {
+            full_name: formData.fullName.trim(),
+            email: formData.email.trim().toLowerCase(),
+            phone: formData.phone.trim(),
+            subject: formData.subject,
+            level: formData.level,
+            requested_date: format(formData.date!, "yyyy-MM-dd"),
+            requested_time: formData.time,
+            notes: formData.notes.trim(),
+          },
+        },
+      }).catch((err) => console.error("Academy notification failed:", err));
+
       toast({
         title: "Request Submitted!",
         description: "Your tutoring request has been received. Our team will contact you shortly.",

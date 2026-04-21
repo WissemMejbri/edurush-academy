@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Send, Mail, Clock, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
+import { supabase } from "@/integrations/supabase/client";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -15,18 +16,65 @@ const ContactSection = () => {
   const [form, setForm] = useState({ name: "", email: "", curriculum: "", message: "" });
   const [sending, setSending] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
+    const name = form.name.trim();
+    const email = form.email.trim().toLowerCase();
+    const message = form.message.trim();
+
+    if (!name || !email || !message) {
       toast({ title: t("contact.fillRequired"), variant: "destructive" });
       return;
     }
+    if (!isValidEmail(email)) {
+      toast({ title: "Invalid email address", variant: "destructive" });
+      return;
+    }
+
     setSending(true);
-    setTimeout(() => {
-      setSending(false);
+    try {
+      // 1) Persist to dashboard/database (always — even if email service fails)
+      const { error: dbError } = await supabase
+        .from("consultation_requests" as any)
+        .insert({
+          full_name: name,
+          email,
+          curriculum: form.curriculum || null,
+          message,
+          status: "pending",
+        } as any);
+
+      if (dbError) throw dbError;
+
+      // 2) Send email notifications (best effort — don't block on it)
+      supabase.functions
+        .invoke("send-inquiry-email", {
+          body: {
+            type: "consultation",
+            data: {
+              full_name: name,
+              email,
+              curriculum: form.curriculum,
+              message,
+            },
+          },
+        })
+        .catch((err) => console.error("Email notification failed:", err));
+
       toast({ title: t("contact.sent"), description: t("contact.sentDesc") });
       setForm({ name: "", email: "", curriculum: "", message: "" });
-    }, 1000);
+    } catch (err: any) {
+      console.error("Consultation submission error:", err);
+      toast({
+        title: "Submission failed",
+        description: err.message || "Please try again or call us directly.",
+        variant: "destructive",
+      });
+    } finally {
+      setSending(false);
+    }
   };
 
   return (

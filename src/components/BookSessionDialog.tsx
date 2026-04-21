@@ -106,12 +106,34 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
 
       if (error) throw error;
 
-      // Send confirmation email via edge function
+      // Send confirmation email to student (existing behavior)
       if (data) {
         supabase.functions.invoke("booking-notifications", {
           body: { session_id: data.id, event_type: "application_received" },
         }).catch(console.error);
       }
+
+      // Notify the academy + auto-reply (best effort, non-blocking)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      supabase.functions.invoke("send-inquiry-email", {
+        body: {
+          type: "session_booking",
+          data: {
+            full_name: profile?.full_name || user.email?.split("@")[0] || "Student",
+            email: user.email,
+            subject: formData.subject,
+            level: formData.level,
+            requested_date: format(formData.date!, "yyyy-MM-dd"),
+            requested_time: formData.time,
+            notes: formData.notes,
+          },
+        },
+      }).catch((err) => console.error("Academy notification failed:", err));
 
       toast({
         title: "Application Submitted!",
