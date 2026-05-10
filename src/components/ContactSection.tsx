@@ -91,7 +91,7 @@ const ContactSection = () => {
           <div className="grid lg:grid-cols-5 gap-8">
             <div className="lg:col-span-2 flex flex-col gap-5">
               {[
-                { icon: Mail, title: t("contact.emailUs"), desc: "info.edurushacademy@gmail.com", href: "mailto:info.edurushacademy@gmail.com?subject=Inquiry%20about%20EduRush%20Academy" },
+                { icon: Mail, title: t("contact.emailUs"), desc: "support@infoedurushacademy.com", href: "mailto:support@infoedurushacademy.com?subject=Inquiry%20about%20EduRush%20Academy" },
                 { icon: Clock, title: t("contact.responseTime"), desc: t("contact.responseTimeVal"), href: undefined },
                 { icon: Phone, title: t("contact.callUs"), desc: "+216 48 044 486", href: "tel:+21648044486" },
               ].map(({ icon: Icon, title, desc, href }, i) => {

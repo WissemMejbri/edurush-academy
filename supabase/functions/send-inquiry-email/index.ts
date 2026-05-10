@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
-const ACADEMY_EMAIL = "info.edurushacademy@gmail.com";
+const ACADEMY_EMAIL = "support@infoedurushacademy.com";
 // Resend's onboarding sender works without domain verification (good for now).
 // Once a domain is verified, swap to e.g. "EduRush Academy <noreply@yourdomain.com>".
 const FROM_ADDRESS = "EduRush Academy <onboarding@resend.dev>";
@@ -75,7 +75,7 @@ ${opts.notes ? `<div style="background:#fef9f0;border-left:4px solid #c8933f;pad
 </td></tr>
 <tr><td style="background:#f8fafc;padding:20px 32px;text-align:center;border-top:1px solid #eef1f6">
 <p style="color:#a0aec0;font-size:11px;margin:0">© ${new Date().getFullYear()} EduRush Academy · Tunis, Tunisia</p>
-<p style="color:#a0aec0;font-size:11px;margin:4px 0 0">info.edurushacademy@gmail.com · +216 48 044 486</p>
+<p style="color:#a0aec0;font-size:11px;margin:4px 0 0">support@infoedurushacademy.com · +216 48 044 486</p>
 </td></tr>
 </table></td></tr></table></body></html>`;
 }

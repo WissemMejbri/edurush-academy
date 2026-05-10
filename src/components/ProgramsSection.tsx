@@ -3,8 +3,6 @@ import { motion } from "framer-motion";
 import { BookOpen, FlaskConical, Star, ArrowRight, CheckCircle2, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { BookSessionDialog } from "@/components/BookSessionDialog";
 import { GuestBookingDialog } from "@/components/GuestBookingDialog";
 
 const fadeUp = {
@@ -15,18 +13,10 @@ const fadeUp = {
 const ProgramsSection = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [bookDialogOpen, setBookDialogOpen] = useState(false);
   const [guestDialogOpen, setGuestDialogOpen] = useState(false);
 
-  const handleBookSession = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      // Open guest booking dialog instead of redirecting to auth
-      setGuestDialogOpen(true);
-    } else {
-      setBookDialogOpen(true);
-    }
-  };
+  // Guest-only mode: every "Book a Session" goes through the public guest flow.
+  const handleBookSession = () => setGuestDialogOpen(true);
 
   const programs = [
     {
@@ -90,7 +80,6 @@ const ProgramsSection = () => {
         </div>
       </div>
 
-      <BookSessionDialog open={bookDialogOpen} onOpenChange={setBookDialogOpen} />
       <GuestBookingDialog open={guestDialogOpen} onOpenChange={setGuestDialogOpen} />
     </section>
   );
