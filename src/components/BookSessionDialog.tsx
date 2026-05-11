@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Calendar as CalendarIcon, Clock, BookOpen, ChevronRight, ChevronLeft, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { sendInquiryNotification } from "@/lib/notify";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import {
@@ -120,20 +121,23 @@ export function BookSessionDialog({ open, onOpenChange, preselectedTeacher, onBo
         .eq("user_id", user.id)
         .maybeSingle();
 
-      supabase.functions.invoke("send-inquiry-email", {
-        body: {
-          type: "session_booking",
-          data: {
-            full_name: profile?.full_name || user.email?.split("@")[0] || "Student",
-            email: user.email,
-            subject: formData.subject,
-            level: formData.level,
-            requested_date: format(formData.date!, "yyyy-MM-dd"),
-            requested_time: formData.time,
-            notes: formData.notes,
-          },
+      const studentName = profile?.full_name || user.email?.split("@")[0] || "Student";
+      sendInquiryNotification({
+        kind: "session_booking",
+        subject: "New Tutoring Session Request – EduRush",
+        visitorName: studentName,
+        visitorEmail: user.email || "",
+        fields: {
+          subject: formData.subject,
+          level: formData.level,
+          preferred_date: format(formData.date!, "yyyy-MM-dd"),
+          preferred_time: formData.time,
+          notes: formData.notes || "—",
+          request_type: "Registered Student Booking",
         },
-      }).catch((err) => console.error("Academy notification failed:", err));
+        autoReplyMessage:
+          `Hi ${studentName},\n\nThank you for booking a tutoring session with EduRush Academy. We've received your request and our team will contact you shortly to confirm details.\n\n— EduRush Academy`,
+      });
 
       toast({
         title: "Application Submitted!",
