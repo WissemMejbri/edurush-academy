@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Calendar as CalendarIcon, Clock, BookOpen, ChevronRight, ChevronLeft, FileText, User, Mail, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { sendInquiryNotification } from "@/lib/notify";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import {
@@ -95,22 +96,24 @@ export function GuestBookingDialog({ open, onOpenChange }: GuestBookingDialogPro
 
       if (error) throw error;
 
-      // Notify the academy + send auto-reply (best effort, non-blocking)
-      supabase.functions.invoke("send-inquiry-email", {
-        body: {
-          type: "guest_session_booking",
-          data: {
-            full_name: formData.fullName.trim(),
-            email: formData.email.trim().toLowerCase(),
-            phone: formData.phone.trim(),
-            subject: formData.subject,
-            level: formData.level,
-            requested_date: format(formData.date!, "yyyy-MM-dd"),
-            requested_time: formData.time,
-            notes: formData.notes.trim(),
-          },
+      // Notify the academy via FormSubmit (best effort — DB already saved)
+      sendInquiryNotification({
+        kind: "guest_session_booking",
+        subject: "New Tutoring Session Request – EduRush",
+        visitorName: formData.fullName.trim(),
+        visitorEmail: formData.email.trim().toLowerCase(),
+        fields: {
+          phone: formData.phone.trim() || "—",
+          subject: formData.subject,
+          level: formData.level,
+          preferred_date: format(formData.date!, "yyyy-MM-dd"),
+          preferred_time: formData.time,
+          notes: formData.notes.trim() || "—",
+          request_type: "Guest Booking",
         },
-      }).catch((err) => console.error("Academy notification failed:", err));
+        autoReplyMessage:
+          `Hi ${formData.fullName.trim()},\n\nThank you for booking a tutoring session with EduRush Academy. We've received your request and our team will contact you shortly to confirm the date, time, and tutor.\n\nIn the meantime, feel free to reply to this email or call +216 48 044 486.\n\n— EduRush Academy`,
+      });
 
       toast({
         title: "Request Submitted!",

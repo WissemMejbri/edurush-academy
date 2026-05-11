@@ -4,6 +4,7 @@ import { Send, Mail, Clock, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
+import { sendInquiryNotification } from "@/lib/notify";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -48,20 +49,19 @@ const ContactSection = () => {
 
       if (dbError) throw dbError;
 
-      // 2) Send email notifications (best effort — don't block on it)
-      supabase.functions
-        .invoke("send-inquiry-email", {
-          body: {
-            type: "consultation",
-            data: {
-              full_name: name,
-              email,
-              curriculum: form.curriculum,
-              message,
-            },
-          },
-        })
-        .catch((err) => console.error("Email notification failed:", err));
+      // 2) Send email notification via FormSubmit (best effort — DB already saved)
+      sendInquiryNotification({
+        kind: "consultation",
+        subject: "New Free Consultation Request – EduRush",
+        visitorName: name,
+        visitorEmail: email,
+        fields: {
+          curriculum: form.curriculum || "—",
+          message,
+        },
+        autoReplyMessage:
+          `Hi ${name},\n\nThank you for contacting EduRush Academy. We've received your free consultation request and our team will reach out to you shortly to confirm the details.\n\nIn the meantime, you can reply to this email or call +216 48 044 486.\n\n— EduRush Academy`,
+      });
 
       toast({ title: t("contact.sent"), description: t("contact.sentDesc") });
       setForm({ name: "", email: "", curriculum: "", message: "" });
